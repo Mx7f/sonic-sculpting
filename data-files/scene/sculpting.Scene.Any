@@ -51,19 +51,13 @@
                 farPlaneZ = -30; 
                 fovDegrees = 40; 
                 fovDirection = "VERTICAL"; 
-                nearPlaneZ = -0.25; 
+                nearPlaneZ = -0.01; 
                 pixelOffset = Vector2(0, 0 ); 
             }; 
             
             visualizationScale = 1; 
         }; 
-        
-        pulsar = ParticleSystem { 
-            canChange = true; 
-            frame = CFrame::fromXYZYPRDegrees(0,0,0, 0, 0, 0 ); 
-            model = "pulsarModel";
-            particlesAreInWorldSpace = false;
-        }; 
+
         /*
         sun = Light { 
             attenuation = ( 0.0001, 0, 1 ); 
@@ -111,10 +105,10 @@
         
         environmentMap = Texture::Specification { 
             encoding = Texture::Encoding { 
-                readMultiplyFirst = 0.0; 
+                readMultiplyFirst = 1.0; 
             }; 
             
-            filename = "cubemap/uffizi/uffizi*.jpg"; 
+            filename = "cubemap/interstellar/interstellar*.png"; 
         }; 
         
     }; 
@@ -122,30 +116,9 @@
     models = { 
 
         
-        pulsarModel = ParticleSystemModel::Emitter::Specification { 
-            initialDensity = 30; 
-            material = UniversalMaterial::Specification {  
-                lambertian = "material/pinksprite.png";
-                emissive = Texture::Specification { 
-                    encoding = Texture::Encoding { 
-                        readMultiplyFirst = 1.0; 
-                    }; 
-            
-                    filename = "material/pinksprite.png";
-                }; 
-            }; 
-            particleLifetimeMean = 1.0;
-            particleLifetimeVariance = 0.1;
-            shape = Sphere(2);
-            location = VOLUME;
-            radiusMean = 0.3;
-            radiusVariance = 0.0;
-            noisePower = 0;
-            angularVelocityMean = 0.5;
-            angularVelocityVariance = 0.25;
-        }; 
+        
         
     }; 
     
-    name = "Visualizer"; 
+    name = "Sculpting"; 
 } 

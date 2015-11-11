@@ -14,7 +14,7 @@ int main(int argc, const char* argv[]) {
     settings.window.height      = 720;
     settings.window.asynchronous = false;
     settings.window.resizable = true;
-    settings.window.caption = "HearEyeAm";
+    settings.window.caption = "Sonic Sculpting";
     settings.dataDir = FileSystem::currentDirectory();
     settings.screenshotDirectory = "../journal/";
 
@@ -96,7 +96,7 @@ void App::initializeAudio() {
 
 void App::onInit() {
     GApp::onInit();
-
+    m_appMode = AppMode::DEFAULT;
     // TODO: Print instructions
     m_maxSavedTimeSlices = 512;
     initializeAudio();
@@ -107,7 +107,7 @@ void App::onInit() {
     m_smoothedRootMeanSquare = 0.0f;
 
     makeGUI();
-    loadScene("Visualizer");
+    loadScene("Sculpting");
 }
 
 void App::makeGUI() {
@@ -163,7 +163,7 @@ void App::updateAudioData() {
         sumSquare += square(m_cpuRawAudioData[i]);
     }
     float rms = sqrt(sumSquare / sampleCount);
-    m_smoothedRootMeanSquare = lerp(rms, m_smoothedRootMeanSquare, 0.95f);
+    m_smoothedRootMeanSquare = lerp(rms, m_smoothedRootMeanSquare, 0.8f);
 
     int numStoredTimeSlices = m_cpuRawAudioData.size() / sampleCount;
     shared_ptr<CPUPixelTransferBuffer> ptb = CPUPixelTransferBuffer::fromData(sampleCount, numStoredTimeSlices, ImageFormat::R32F(), m_cpuRawAudioData.getCArray());
@@ -229,6 +229,16 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
     rd->pushState(m_framebuffer); {
         // Call to make the App show the output of debugDraw(...)
         rd->setProjectionAndCameraMatrix(activeCamera()->projection(), activeCamera()->frame());
+
+        for (auto& piece : m_sonicSculpturePieces) {
+            piece->render(rd, scene()->lightingEnvironment());
+        }
+        if (notNull(m_currentSonicSculpturePiece)) {
+            m_currentSonicSculpturePiece->render(rd, scene()->lightingEnvironment());
+        }
+        
+
+
         drawDebugShapes();
         const shared_ptr<Entity>& selectedEntity = (notNull(developerWindow) && notNull(developerWindow->sceneEditorWindow)) ? developerWindow->sceneEditorWindow->selectedEntity() : shared_ptr<Entity>();
         scene()->visualize(rd, selectedEntity, allSurfaces, sceneVisualizationSettings());
@@ -258,7 +268,11 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
 
 void App::onUserInput(UserInput* ui) {
     GApp::onUserInput(ui);
-    
+    if (ui->keyDown(GKey::SPACE)) {
+        m_appMode = AppMode::MAKING_SCULPTURE;
+    } else {
+        m_appMode = AppMode::DEFAULT;
+    }
 
     // Add key handling here based on the keys currently held or
     // ones that changed in the last frame.
@@ -272,6 +286,24 @@ void App::onGraphics2D(RenderDevice* rd, Array<Surface2D::Ref>& posed2D) {
 void App::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
     GApp::onSimulation(rdt, sdt, idt);
     updateAudioData();  
+    float delta = 0.1f;
+    float radius = m_smoothedRootMeanSquare * 1.0f;
+    CFrame frame = activeCamera()->frame();
+    frame.translation += activeCamera()->frame().lookVector() * 1.1f;
+    if (m_appMode == AppMode::DEFAULT) {
+        if (notNull(m_currentSonicSculpturePiece)) {
+            if (m_currentSonicSculpturePiece->size() > 0) {
+                m_currentSonicSculpturePiece->insert(frame, 0.0f, delta);
+            }
+            m_sonicSculpturePieces.append(m_currentSonicSculpturePiece);
+            m_currentSonicSculpturePiece = shared_ptr<SonicSculpturePiece>();
+        }
+    } else if (m_appMode == AppMode::MAKING_SCULPTURE) {
+        if (isNull(m_currentSonicSculpturePiece)) {
+            m_currentSonicSculpturePiece = SonicSculpturePiece::create(UniversalMaterial::createDiffuse(Color3(0.9f)));
+        }
+        m_currentSonicSculpturePiece->insert(frame, radius, delta);
+    }
 
     // Example GUI dynamic layout code.  Resize the debugWindow to fill
     // the screen horizontally.

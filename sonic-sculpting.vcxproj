@@ -92,26 +92,16 @@
     <ClInclude Include="source\chuck_fft.h" />
     <ClInclude Include="source\EWMAFrequency.h" />
     <ClInclude Include="source\RtAudio.h" />
+    <ClInclude Include="source\SonicSculpturePiece.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\App.cpp" />
     <ClCompile Include="source\chuck_fft.c" />
     <ClCompile Include="source\RtAudio.cpp" />
+    <ClCompile Include="source\SonicSculpturePiece.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="data-files\scene\visualizer.Scene.Any" />
-    <None Include="data-files\shader\audioTextureHelpers.glsl" />
-    <None Include="data-files\shader\cubescape.pix" />
-    <None Include="data-files\shader\eye.pix" />
-    <None Include="data-files\shader\flatColor.pix" />
-    <None Include="data-files\shader\fractalLand.pix" />
-    <None Include="data-files\shader\shadertoyFooter.glsl" />
-    <None Include="data-files\shader\shadertoyHeader.glsl" />
-    <None Include="data-files\shader\sunShader.pix" />
-    <None Include="data-files\shader\visualizeFrequencyMagnitude.pix" />
-    <None Include="data-files\shader\visualizeFrequencyMagnitude.vrt" />
-    <None Include="data-files\shader\visualizeLines.pix" />
-    <None Include="data-files\shader\visualizeLines.vrt" />
+    <None Include="data-files\scene\sculpting.Scene.Any" />
     <None Include="Doxyfile" />
     <None Include="journal\journal.dox" />
     <None Include="mainpage.dox" />

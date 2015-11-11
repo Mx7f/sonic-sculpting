@@ -14,12 +14,15 @@
 #include "RtAudio.h"
 #include "chuck_fft.h"
 #include "EWMAFrequency.h"
-
+#include "SonicSculpturePiece.h"
 /** Global array where we dump raw audio data from RtAudio */
 Array<float> g_currentAudioBuffer;
 
 class App : public GApp {
 protected:
+    G3D_DECLARE_ENUM_CLASS(AppMode, DEFAULT, MAKING_SCULPTURE);
+    AppMode m_appMode;
+
     RtAudio m_rtAudio;
 
     /** EWMA of RMS */
@@ -56,6 +59,8 @@ protected:
     /** GPU storage of fft samples */
     shared_ptr<Texture> m_frequencyAudioTexture;
 
+    Array<shared_ptr<SonicSculpturePiece> > m_sonicSculpturePieces;
+    shared_ptr<SonicSculpturePiece> m_currentSonicSculpturePiece;
 
     /** Set all our audio textures on \param Args */
     void setAudioShaderArgs(Args& args);
