@@ -1,0 +1,151 @@
+
+/* -*- c++ -*- */
+{ 
+    entities = { 
+        camera = Camera { 
+            depthOfFieldSettings = DepthOfFieldSettings { 
+                enabled = false; 
+                farBlurRadiusFraction = 0.005; 
+                farBlurryPlaneZ = -100; 
+                farSharpPlaneZ = -40; 
+                focusPlaneZ = -10; 
+                lensRadius = 0.01; 
+                model = "ARTIST"; 
+                nearBlurRadiusFraction = 0.015; 
+                nearBlurryPlaneZ = -0.05; 
+                nearSharpPlaneZ = -0.1; 
+            }; 
+            
+            filmSettings = FilmSettings { 
+                antialiasingEnabled = true; 
+                antialiasingFilterRadius = 0; 
+                antialiasingHighQuality = true; 
+                bloomRadiusFraction = 0.02796; 
+                bloomStrength = 1.0; 
+                debugZoom = 1; 
+                gamma = 2.2; 
+                sensitivity = 1; 
+                toneCurve = Spline { 
+                    control = ( 0, 0.1, 0.2, 0.5, 1 ); 
+                    extrapolationMode = "LINEAR"; 
+                    finalInterval = -1; 
+                    interpolationMode = "CUBIC"; 
+                    time = ( 0, 0.1, 0.2, 0.5, 1 ); 
+                }; 
+                
+                vignetteBottomStrength = 0.05; 
+                vignetteSizeFraction = 0.17; 
+                vignetteTopStrength = 0.5; 
+            }; 
+            
+            frame = CFrame::fromXYZYPRDegrees(0,0,6.1,0,0,0); 
+            motionBlurSettings = MotionBlurSettings { 
+                cameraMotionInfluence = 0.5; 
+                enabled = true; 
+                exposureFraction = 0.75; 
+                maxBlurDiameterFraction = 0.1; 
+                numSamples = 27; 
+            }; 
+            
+            projection = Projection { 
+                farPlaneZ = -30; 
+                fovDegrees = 40; 
+                fovDirection = "VERTICAL"; 
+                nearPlaneZ = -0.25; 
+                pixelOffset = Vector2(0, 0 ); 
+            }; 
+            
+            visualizationScale = 1; 
+        }; 
+        
+        pulsar = ParticleSystem { 
+            canChange = true; 
+            frame = CFrame::fromXYZYPRDegrees(0,0,0, 0, 0, 0 ); 
+            model = "pulsarModel";
+            particlesAreInWorldSpace = false;
+        }; 
+        /*
+        sun = Light { 
+            attenuation = ( 0.0001, 0, 1 ); 
+            bulbPower = Color3(5000 ); 
+            canChange = false; 
+            castsShadows = true; 
+            enabled = true;
+            stochasticShadows = true;
+            frame = CFrame::fromXYZYPRDegrees(-15.1351, 36.5859, -14.5709, -135.458, -59.5992, 5.45791 ); 
+            nearPlaneZLimit = -30; 
+            producesDirectIllumination = true; 
+            producesIndirectIllumination = true; 
+            shadowMapSize = Vector2int16(2048, 2048);
+            shadowMapBias = 0.04;
+            spotHalfAngleDegrees = 20; 
+            spotSquare = true; 
+            type = "SPOT"; 
+        }; 
+        */
+    }; 
+    
+    lightingEnvironment = LightingEnvironment { 
+        ambientOcclusionSettings = AmbientOcclusionSettings { 
+            bias = 0.012; 
+            blurRadius = 4; 
+            blurStepSize = 2; 
+            depthPeelSeparationHint = 0.872287; 
+            edgeSharpness = 1; 
+            enabled = false; 
+            intensity = 1; 
+            monotonicallyDecreasingBilateralWeights = false; 
+            numSamples = 19; 
+            radius = 1.5; 
+            temporalFilterSettings = TemporalFilter::Settings { 
+                alpha = 0; 
+                falloffEndDistance = 0.07; 
+                falloffStartDistance = 0.05; 
+            }; 
+            
+            temporallyVarySamples = false; 
+            useDepthPeelBuffer = true; 
+            useNormalBuffer = true; 
+            useNormalsInBlur = true; 
+        }; 
+        
+        environmentMap = Texture::Specification { 
+            encoding = Texture::Encoding { 
+                readMultiplyFirst = 0.0; 
+            }; 
+            
+            filename = "cubemap/uffizi/uffizi*.jpg"; 
+        }; 
+        
+    }; 
+    
+    models = { 
+
+        
+        pulsarModel = ParticleSystemModel::Emitter::Specification { 
+            initialDensity = 30; 
+            material = UniversalMaterial::Specification {  
+                lambertian = "material/pinksprite.png";
+                emissive = Texture::Specification { 
+                    encoding = Texture::Encoding { 
+                        readMultiplyFirst = 1.0; 
+                    }; 
+            
+                    filename = "material/pinksprite.png";
+                }; 
+            }; 
+            particleLifetimeMean = 1.0;
+            particleLifetimeVariance = 0.1;
+            shape = Sphere(2);
+            location = VOLUME;
+            radiusMean = 0.3;
+            radiusVariance = 0.0;
+            noisePower = 0;
+            angularVelocityMean = 0.5;
+            angularVelocityVariance = 0.25;
+        }; 
+        
+    }; 
+    
+    name = "Visualizer"; 
+} 

@@ -1,0 +1,18 @@
+/** \file mainpage.dox \mainpage
+
+The application (HearEyeAm) is available on github at https://github.com/Mx7f/cs476a. You will need the latest version of the
+G3D Innovation Engine to run this code, build instructions here https://g3d.codeplex.com/SourceControl/latest#G3D10/readme.md
+though you may need the latest from the svn at svn://graphics-svn.cs.williams.edu/g3d/G3D10.
+
+Once G3D is building on your machine, use either icompile (provided with G3D), or the visual studio project files to compile.
+
+I will aim to do a binary release (so you don't need to compile libraries yourself), in the coming days.
+
+The overarching design goal, once I started iterating, was to somehow force all of the requirements of the assignment into
+a single visualization of an eye, rendered only in a pixel shader, in my favorite color scheme of all time: green on black like the Matrix (or OS X "homebrew" terminal).
+
+By far the hardest part of this whole process was deciding on a design direction. I spent over a week bouncing around to different ways of visualizing everything before settling on this over constrained direction. I think only by artificially limiting myself was I able to get anything accomplished.
+
+See the \link Journal Development Journal \endlink for *many* more details on this project; including loads of screenshots!
+
+*/
