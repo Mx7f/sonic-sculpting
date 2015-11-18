@@ -64,11 +64,12 @@ shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<Universal
     return s;
 }
 
-void SonicSculpturePiece::insert(const CFrame & frame, const float radius, const float delta) {
+void SonicSculpturePiece::insert(const CFrame & frame, const float radius, const float delta, const Array<float>& newSamples ) {
     m_gpuUpdated = false;
     m_originalFrames.append(frame);
     m_radii.append(radius);
     m_deltas.append(delta);
+	m_audioSamples.append(newSamples);
     uploadToGPU();
 }
 

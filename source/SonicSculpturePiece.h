@@ -20,6 +20,8 @@ protected:
 
     CFrame          m_frame;
 
+	Array<float>	m_audioSamples;
+
     void getTransformedFramesFromOriginals();
     void uploadToGPU();
     void getCPUGeometry(CPUVertexArray& cpuVertexArray, Array<int>& cpuIndexArray) const;
@@ -28,7 +30,7 @@ public:
 
     static shared_ptr<SonicSculpturePiece> create(shared_ptr<UniversalMaterial> material);
 
-    void insert(const CFrame& frame, const float radius, const float delta);
+    void insert(const CFrame& frame, const float radius, const float delta, const Array<float>& samples = Array<float>());
 
     void render(RenderDevice* rd, const LightingEnvironment& env);
 
