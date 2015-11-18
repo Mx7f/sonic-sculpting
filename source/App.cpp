@@ -49,7 +49,7 @@ int audioCallback( void * outputBuffer, void * inputBuffer, unsigned int numFram
 	for (Sample& s : output) {
 		s = 0.0;
 	}
-	//Synthesizer::global->synthesize(output);
+	Synthesizer::global->synthesize(output);
 	memcpy(outputBuffer, output.getCArray(), numBytes);
 
 	// TODO: remove g_currentAudioBuffer... our mutex scheme handles everything just fine
@@ -152,6 +152,7 @@ bool App::onEvent(const GEvent& e) {
     if (GApp::onEvent(e)) {
         return true;
     }
+
     // If you need to track individual UI events, manage them here.
     // Return true if you want to prevent other parts of the system
     // from observing this specific event.
@@ -303,6 +304,15 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
     m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0));
 }
 
+
+void App::playSculpture(const Ray& playRay) {
+
+	for (auto piece : m_sonicSculpturePieces) {
+		const shared_ptr<AudioSample>& sample = piece->getAudioSampleFromRay(playRay);
+		Synthesizer::global->queueSound(sample);
+	}
+}
+
 void App::onUserInput(UserInput* ui) {
     GApp::onUserInput(ui);
     if (ui->keyDown(GKey::SPACE)) {
@@ -310,6 +320,11 @@ void App::onUserInput(UserInput* ui) {
     } else {
         m_appMode = AppMode::DEFAULT;
     }
+
+	if (ui->keyPressed(GKey::RETURN)) {
+		const Ray& mouseRay = scene()->eyeRay(activeCamera(), userInput->mouseXY() + Vector2(0.5f, 0.5f), RenderDevice::current->viewport(), Vector2int16(0, 0));
+		playSculpture(mouseRay);
+	}
 
     // Add key handling here based on the keys currently held or
     // ones that changed in the last frame.

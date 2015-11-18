@@ -58,6 +58,81 @@ void SonicSculpturePiece::uploadToGPU() {
     m_gpuUpdated = true;
 }
 
+Sample SonicSculpturePiece::sampleAudio(int windowIndex, float alpha) {
+	// TODO: get window size from somewhere
+	int windowSize = 512;
+	// TODO: Do something better than nearest neighbors sampling...
+	return m_audioSamples[windowIndex*windowSize + (int)(alpha*windowSize)];
+}
+
+
+shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ray) {
+	Vector3 zAxis = -ray.direction();
+	Vector3 xAxis;
+	if (abs(zAxis.dot(Vector3::unitY())) < 0.9f) {
+		xAxis = zAxis.unitCross(Vector3::unitY());
+	} else {
+		xAxis = zAxis.unitCross(Vector3::unitX());
+	}
+	Vector3 yAxis = zAxis.cross(xAxis);
+
+	CFrame rayFrame = CFrame(Matrix3::fromColumns(xAxis, yAxis, zAxis), ray.origin());
+	debugPrintf("%s\n", rayFrame.toXYZYPRDegreesString().c_str());
+
+	// TODO: get sample rate from somewhere
+	shared_ptr<AudioSample> sound = AudioSample::createEmpty(440000);
+
+	getTransformedFramesFromOriginals();
+	Array<CFrame> raySpaceFrames;
+	for (auto& frame : m_transformedFrames) {
+		raySpaceFrames.append(rayFrame.toObjectSpace(frame));
+	}
+
+	Array<Vector2> startEndZs;
+	Array<float> minZs;
+	Array<float> maxZs;
+	float maximumZ = -finf();
+	float minimumZ = finf();
+	for (int i = 0; i < raySpaceFrames.size() - 1; ++i) {
+		Vector2 startEndZ = Vector2(raySpaceFrames[i].translation.z, raySpaceFrames[i+1].translation.z);
+		startEndZs.append(startEndZ);
+		float minZ = min(startEndZ[0], startEndZ[1]);
+		float maxZ = max(startEndZ[0], startEndZ[1]);
+		minZs.append(minZ);
+		maxZs.append(maxZ);
+		minimumZ = min(minimumZ, minZ);
+		maximumZ = max(maximumZ, maxZ);
+	}
+	// TODO: get these quantities from single source, right now duplicating these values;
+	double delta = 0.1;
+	double metersPerSample = delta / 512.0;
+	int numSamples = max((int)(-minimumZ / metersPerSample), 0);
+
+
+	debugPrintf("MinZ, MaxZ, numSamples: %f, %f, %d\n", minimumZ, maximumZ, numSamples);
+
+	sound->buffer.resize(numSamples);
+
+	// Rasterize the sounds!
+
+	for (int i = 0; i < startEndZs.size(); ++i) {
+		int startIndex	= max((int)ceil(-maxZs[i] / metersPerSample), 0);
+		int endIndex	= min((int)floor(-minZs[i] / metersPerSample), numSamples);
+		float startZ	= startEndZs[i][0];
+		float endZ		= startEndZs[i][1];
+		for (int j = startIndex; j < endIndex; ++j) {
+			float sampleZ = -j*metersPerSample;
+			float alpha = (sampleZ - startZ) / (endZ - startZ);
+			if (alpha >= 0 && alpha <= 1) {
+				sound->buffer[j] = sampleAudio(i, alpha);
+			}
+		}
+	}
+
+
+	return sound;
+}
+
 shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<UniversalMaterial> material) {
     shared_ptr<SonicSculpturePiece> s(new SonicSculpturePiece());
     s->m_material = material;

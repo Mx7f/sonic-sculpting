@@ -8,6 +8,9 @@ struct SoundInstance {
     int currentPosition;
     /** Returns true if finished */
     bool play(Array<float>& buffer) {
+		if (currentPosition == audioSample->sampleCount()) {
+			return true;
+		}
         // TODO: double check this
         for (int i = 0; i < buffer.size(); ++i) {
             if (currentPosition >= 0) {

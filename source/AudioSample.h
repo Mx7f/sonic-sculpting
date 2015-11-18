@@ -22,5 +22,10 @@ struct AudioSample {
         }
         return s;
     }
+	static shared_ptr<AudioSample> createEmpty(int sampleRate) {
+		shared_ptr<AudioSample> s(new AudioSample());
+		s->sampleRate = sampleRate;
+		return s;
+	}
 };
 #endif

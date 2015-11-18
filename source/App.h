@@ -76,6 +76,8 @@ protected:
     void makeGUI();
 
 
+	void playSculpture(const Ray& playRay);
+
 public:
 
     App(const GApp::Settings& settings = GApp::Settings());
