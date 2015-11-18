@@ -1,7 +1,7 @@
 #ifndef SonicSculpturePiece_h
 #define SonicSculpturePiece_h
 #include <G3D/G3DAll.h>
-
+#include "AudioSample.h"
 class SonicSculpturePiece {
 protected:
     Array<float>    m_deltas;
@@ -20,15 +20,21 @@ protected:
 
     CFrame          m_frame;
 
+	Array<float>	m_audioSamples;
+
+	Sample sampleAudio(int windowIndex, float alpha);
+
     void getTransformedFramesFromOriginals();
     void uploadToGPU();
     void getCPUGeometry(CPUVertexArray& cpuVertexArray, Array<int>& cpuIndexArray) const;
     SonicSculpturePiece() : m_gpuUpdated(false) {}
 public:
 
+	shared_ptr<AudioSample> getAudioSampleFromRay(const Ray& ray);
+
     static shared_ptr<SonicSculpturePiece> create(shared_ptr<UniversalMaterial> material);
 
-    void insert(const CFrame& frame, const float radius, const float delta);
+    void insert(const CFrame& frame, const float radius, const float delta, const Array<float>& samples = Array<float>());
 
     void render(RenderDevice* rd, const LightingEnvironment& env);
 

@@ -13,6 +13,9 @@
     <ClCompile Include="source\SonicSculpturePiece.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\Synthesizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\App.h">
@@ -28,6 +31,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\SonicSculpturePiece.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\AudioSample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Synthesizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

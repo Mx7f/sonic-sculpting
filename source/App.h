@@ -15,8 +15,11 @@
 #include "chuck_fft.h"
 #include "EWMAFrequency.h"
 #include "SonicSculpturePiece.h"
+#include <mutex>
 /** Global array where we dump raw audio data from RtAudio */
 Array<float> g_currentAudioBuffer;
+int g_sampleWindowIndex;
+
 
 class App : public GApp {
 protected:
@@ -49,8 +52,9 @@ protected:
     /** How many slices of time to save */
     int m_maxSavedTimeSlices;
 
-    /** CPU storage of raw samples */
-    Array<float> m_cpuRawAudioData;
+
+	int m_lastSampleWindowProcessed;
+
     /** CPU storage of fft samples */
     Array<complex> m_cpuFrequencyAudioData;
 
@@ -71,9 +75,8 @@ protected:
     /** Called from onInit */
     void makeGUI();
 
-    /** Called once a frame to get the latest audio data and compute statistics such as RMS */
-    void updateAudioData();
 
+	void playSculpture(const Ray& playRay);
 
 public:
 
@@ -89,6 +92,17 @@ public:
     virtual void onUserInput(UserInput* ui) override;
 
     virtual void onSimulation(RealTime rdt, SimTime sdt, SimTime idt) override;
+
+	/** Called after every audio update to get the latest audio data and compute statistics such as RMS */
+	void updateAudioData();
+
+	void updateSonicSculpture(int audioSampleOffset, int audioSampleCount);
+
+	// TODO: rethink access patterns to not have public member variables
+	/** Make sure raw audio is only touched by one thread at a time*/
+	std::mutex m_rawAudioMutex;
+	/** CPU storage of raw samples */
+	Array<float> m_cpuRawAudioData;
 
 };
 
