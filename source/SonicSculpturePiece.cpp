@@ -52,7 +52,8 @@ void SonicSculpturePiece::uploadToGPU() {
     CPUVertexArray cpuVertexArray;
     Array<int> cpuIndexArray;
     getCPUGeometry(cpuVertexArray, cpuIndexArray);
-    cpuVertexArray.copyToGPU(m_vertices, m_normals, AttributeArray(), m_texCoord, AttributeArray(), AttributeArray(), VertexBuffer::WRITE_ONCE);
+    AttributeArray ignore;
+    cpuVertexArray.copyToGPU(m_vertices, m_normals, ignore, m_texCoord, ignore, ignore, VertexBuffer::WRITE_ONCE);
     m_indices = IndexStream(cpuIndexArray, VertexBuffer::create(sizeof(int)*cpuIndexArray.size() + 8));
     
     m_gpuUpdated = true;
