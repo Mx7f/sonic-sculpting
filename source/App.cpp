@@ -274,7 +274,23 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
         if (notNull(m_currentSonicSculpturePiece)) {
             m_currentSonicSculpturePiece->render(rd, scene()->lightingEnvironment());
         }
-        
+        for (int i = m_playPlanes.size() - 1; i >= 0; --i) {
+	  const PlayPlane& pp = m_playPlanes[i];
+	  if (pp.endWindowIndex < g_sampleWindowIndex) {
+	    m_playPlanes.remove(i);
+	  }
+	  Point3 point = pp.origin + (pp.direction * 0.1f * (g_sampleWindowIndex-pp.beginWindowIndex));
+
+	  Color4 solidColor(.2f, .2f, 1, .15f);
+	  //	  Plane plane(point, pp.direction);
+	  //	  Draw::plane(plane, rd, solidColor, Color4::clear());
+
+	  CFrame planeFrame = pp.frame;
+	  planeFrame.translation = point;
+	  
+	  Box b(Vector3(-100.0f, -100.0f, 0.0f), Vector3(100.0f, 100.0f, 0.1f), planeFrame);
+	  Draw::box(b, rd, solidColor, Color4::clear());
+	}
 
 
         drawDebugShapes();
@@ -306,11 +322,35 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
 
 
 void App::playSculpture(const Ray& playRay) {
+  int maxDistance = 0;
+  int startIndex = g_sampleWindowIndex;
+  for (auto piece : m_sonicSculpturePieces) {
+    const shared_ptr<AudioSample>& sample = piece->getAudioSampleFromRay(playRay);
+    maxDistance = max(maxDistance, (int)ceil(sample->buffer.size() / 512.0f));
+    Synthesizer::global->queueSound(sample);
 
-	for (auto piece : m_sonicSculpturePieces) {
-		const shared_ptr<AudioSample>& sample = piece->getAudioSampleFromRay(playRay);
-		Synthesizer::global->queueSound(sample);
+  }
+  if (maxDistance > 0) {
+    PlayPlane pp;
+    pp.direction = playRay.direction();
+    pp.origin = playRay.origin();
+    pp.beginWindowIndex = startIndex;
+    pp.endWindowIndex = startIndex + maxDistance;
+
+    Vector3 zAxis = -playRay.direction();
+	Vector3 xAxis;
+	if (abs(zAxis.dot(Vector3::unitY())) < 0.9f) {
+	  xAxis = zAxis.unitCross(Vector3::unitY());
+	} else {
+	  xAxis = zAxis.unitCross(Vector3::unitX());
 	}
+	Vector3 yAxis = zAxis.cross(xAxis);
+
+	pp.frame = CFrame(Matrix3::fromColumns(xAxis, yAxis, zAxis), pp.origin);
+
+
+    m_playPlanes.append(pp);
+  }
 }
 
 void App::onUserInput(UserInput* ui) {

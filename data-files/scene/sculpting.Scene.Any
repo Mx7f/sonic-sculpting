@@ -48,7 +48,7 @@
             }; 
             
             projection = Projection { 
-                farPlaneZ = -30; 
+                farPlaneZ = -300; 
                 fovDegrees = 40; 
                 fovDirection = "VERTICAL"; 
                 nearPlaneZ = -0.01; 

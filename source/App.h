@@ -28,6 +28,17 @@ protected:
 
     RtAudio m_rtAudio;
 
+
+    struct PlayPlane {
+        Vector3 direction;
+        Point3 origin;
+        int endWindowIndex;
+        int beginWindowIndex;
+      CFrame frame;
+    };
+    
+    Array<PlayPlane> m_playPlanes;
+
     /** EWMA of RMS */
     float m_smoothedRootMeanSquare;
 
