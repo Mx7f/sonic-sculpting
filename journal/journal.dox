@@ -1,6 +1,17 @@
 // -*- html -*-
-/*\section S20151111 2015-11-11: Initial Prototype Works
 
+/*
+\section S20151111 2015-11-18: Playback
+
+Added ability to playback; which is pretty sweet! 
+
+Things to do:
+
+Design cool stuff.
+Potentially add physics engine.
+Better playback.
+
+\section S20151111 2015-11-11: Initial Prototype Works
 
 \thumbnail{2015-11-11_000_sonic-sculpting_g3d_r367__Hold_space_to_start_generation_of_a_sculpt.jpg, Hold space to start generation of a sculpt}
 
