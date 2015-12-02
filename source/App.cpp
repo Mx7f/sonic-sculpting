@@ -18,9 +18,12 @@ int main(int argc, const char* argv[]) {
     settings.window.height      = 720;
     settings.window.asynchronous = false;
     settings.window.resizable = true;
+    settings.window.fullScreen = true;
     settings.window.caption = "Sonic Sculpting";
     settings.dataDir = FileSystem::currentDirectory();
     settings.screenshotDirectory = "../journal/";
+
+    
 
     settings.renderer.deferredShading = false;
     settings.renderer.orderIndependentTransparency = true;
@@ -229,7 +232,7 @@ void App::updateAudioData() {
 		*/
 
 
-		if (numStoredTimeSlices == m_maxSavedTimeSlices) {
+		if (numStoredTimeSlices >= m_maxSavedTimeSlices) {
 			int newTotalSampleCount = sampleCount*(numStoredTimeSlices - 1);
 		
 			for (int i = 0; i < newTotalSampleCount; ++i) {
@@ -307,6 +310,19 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
         } rd->popState();
         return;
     }
+
+    updateAudioData();
+
+    if (System::time() - m_lastInterestingEventTime > 10.0) {
+        if (Random::common().uniform() < 0.001f) {
+            if (m_sonicSculpturePieces.size() > 0) {
+                int index = Random::common().integer(0, m_sonicSculpturePieces.size() - 1);
+                generatePlayPulse(m_sonicSculpturePieces[index]);
+                m_lastInterestingEventTime = System::time();
+            }
+        }
+    }
+    handlePlayPulses();
 
     GBuffer::Specification gbufferSpec = m_gbufferSpecification;
     extendGBufferSpecification(gbufferSpec);
@@ -437,6 +453,14 @@ void App::onUserInput(UserInput* ui) {
 		playSculpture(mouseRay);
 	}
 
+    if (ui->keyPressed(GKey('v'))) {
+        bool visible = scene()->typedEntity<VisibleEntity>("wallPX")->visible();
+        Array<String> wallNames("wallPX", "wallPY", "wallPZ", "wallNX", "wallNY", "wallNZ");
+        for (const String& name : wallNames) {
+            scene()->typedEntity<VisibleEntity>(name)->setVisible(!visible);
+        }
+    }
+
     // Hack to get multiple cubemaps
     if (ui->keyPressed(GKey::PERIOD)) {
         int i = clamp(int(floor(scene()->time() / 200.0f)) + 1, 0, 2);
@@ -469,7 +493,7 @@ void App::onGraphics2D(RenderDevice* rd, Array<Surface2D::Ref>& posed2D) {
 
 void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
 	float delta = 0.1f;
-	float radius = m_smoothedRootMeanSquare * 1.0f;
+	float radius = sqrt(m_smoothedRootMeanSquare) * 1.0f;
 	CFrame frame = activeCamera()->frame();
 	// Offset a bit forward
 	frame.translation += activeCamera()->frame().lookVector() * 0.2f;
@@ -513,18 +537,7 @@ void App::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
     GApp::onSimulation(rdt, sdt, idt);
 	//Synthesizer::global->queueSound
 
-	updateAudioData();
-
-    if (System::time() - m_lastInterestingEventTime > 10.0) {
-        if (Random::common().uniform() < 0.001f) {
-            if (m_sonicSculpturePieces.size() > 0) {
-                int index = Random::common().integer(0, m_sonicSculpturePieces.size() - 1);
-                generatePlayPulse(m_sonicSculpturePieces[index]);
-                m_lastInterestingEventTime = System::time();
-            }
-        }
-    }
-    handlePlayPulses();
+	
 
     // Example GUI dynamic layout code.  Resize the debugWindow to fill
     // the screen horizontally.
