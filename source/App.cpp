@@ -438,15 +438,25 @@ void App::onUserInput(UserInput* ui) {
 	}
 
     // Hack to get multiple cubemaps
-    if (ui->keyPressed(GKey('1'))) {
-        scene()->setTime(0.0);
+    if (ui->keyPressed(GKey::PERIOD)) {
+        int i = clamp(int(floor(scene()->time() / 200.0f)) + 1, 0, 2);
+        scene()->setTime(i * 200.0);
     }
-    if (ui->keyPressed(GKey('2'))) {
-        scene()->setTime(200.0);
+    if (ui->keyPressed(GKey::COMMA)) {
+        int i = clamp(int(floor(scene()->time() / 200.0f)) - 1, 0, 2);
+        scene()->setTime(i * 200.0);
     }
-    if (ui->keyPressed(GKey('3'))) {
-        scene()->setTime(400.0);
+
+    // Hack for playing pieces
+    for (int i = 0; i < 8; ++i) {
+        if (m_sonicSculpturePieces.size() > i) {
+            if (ui->keyPressed(GKey('1' + char(i)))) {
+                generatePlayPulse(m_sonicSculpturePieces[i]);
+                m_lastInterestingEventTime = System::time();
+            }
+        }
     }
+
 
     // Add key handling here based on the keys currently held or
     // ones that changed in the last frame.
