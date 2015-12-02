@@ -4,10 +4,19 @@ shared_ptr<Synthesizer> Synthesizer::global = shared_ptr<Synthesizer>(new Synthe
 
 void Synthesizer::queueSound(shared_ptr<AudioSample> audioSample, int delay) {
     mutex.lock(); {
-        m_sounds.append(SoundInstance(audioSample, -delay));
+        m_sounds.append(SoundInstance(audioSample, -delay, format("%d", m_soundCount)));
+        ++m_soundCount;
     } mutex.unlock();
 }
 
+
+void Synthesizer::getSoundInstances(Array<SoundInstance>& soundInstances) {
+    mutex.lock(); {
+        for (auto s : m_sounds) {
+            soundInstances.append(s);
+        }
+    } mutex.unlock();
+}
 
 void Synthesizer::synthesize(Array<Sample>& samples) {
     mutex.lock(); {

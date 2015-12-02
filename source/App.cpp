@@ -315,6 +315,19 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
             m_settings.depthGuardBandThickness - m_settings.colorGuardBandThickness);
     } rd->popState();
 
+    rd->push2D(m_framebuffer); {
+        rd->setBlendFunc(RenderDevice::BLEND_SRC_ALPHA, RenderDevice::BLEND_ONE_MINUS_SRC_ALPHA);
+        Array<SoundInstance> soundInstances;
+        Synthesizer::global->getSoundInstances(soundInstances);
+        int xOffset = 10;
+        Vector2 dim(256,100);
+        for (int i = 0; i < soundInstances.size(); ++i) {
+            int yOffset = rd->height() - 120 - (120 * i);
+            Draw::rect2D(Rect2D::xywh(Point2(xOffset, yOffset), dim), rd, Color3::white(), soundInstances[i].displayTexture());
+        }
+        
+    } rd->pop2D();
+
     if ((submitToDisplayMode() == SubmitToDisplayMode::MAXIMIZE_THROUGHPUT) && (!renderDevice->swapBuffersAutomatically())) {
         // We're about to render to the actual back buffer, so swap the buffers now.
         // This call also allows the screenshot and video recording to capture the

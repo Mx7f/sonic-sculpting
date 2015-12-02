@@ -113,7 +113,7 @@ shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ra
 	debugPrintf("MinZ, MaxZ, numSamples: %f, %f, %d\n", minimumZ, maximumZ, numSamples);
 
 	sound->buffer.resize(numSamples);
-
+    memset(sound->buffer.getCArray(), 0, numSamples*sizeof(Sample));
 	// Rasterize the sounds!
 
 	for (int i = 0; i < startEndZs.size(); ++i) {

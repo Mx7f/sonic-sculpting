@@ -16,6 +16,9 @@
     <ClCompile Include="source\Synthesizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\SoundInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\App.h">
@@ -42,6 +45,9 @@
     <ClInclude Include="source\Synthesizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\SoundInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="mainpage.dox" />
@@ -49,6 +55,15 @@
     <None Include="journal\journal.dox" />
     <None Include="data-files\scene\sculpting.Scene.Any">
       <Filter>Scene Files</Filter>
+    </None>
+    <None Include="data-files\shader\visualizeLines.pix">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="data-files\shader\visualizeLines.vrt">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="data-files\shader\flatColor.pix">
+      <Filter>Shader Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

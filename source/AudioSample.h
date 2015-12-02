@@ -27,5 +27,6 @@ struct AudioSample {
 		s->sampleRate = sampleRate;
 		return s;
 	}
+
 };
 #endif

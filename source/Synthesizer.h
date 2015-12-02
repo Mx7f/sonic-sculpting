@@ -1,32 +1,8 @@
 #ifndef Synthesizer_h
 #define Synthesizer_h
-#include<G3D/G3DAll.h>
-#include "AudioSample.h"
+
 #include <mutex>
-struct SoundInstance {
-    shared_ptr<AudioSample> audioSample;
-    int currentPosition;
-    /** Returns true if finished */
-    bool play(Array<float>& buffer) {
-		if (currentPosition == audioSample->sampleCount()) {
-			return true;
-		}
-        // TODO: double check this
-        for (int i = 0; i < buffer.size(); ++i) {
-            if (currentPosition >= 0) {
-                buffer[i] += audioSample->buffer[currentPosition];
-            }
-            ++currentPosition;
-            if (currentPosition == audioSample->sampleCount()) {
-                return true;
-            }
-        }
-        return false;
-    }
-    SoundInstance() {}
-    SoundInstance(const shared_ptr<AudioSample>& audioSample, int currentPosition) :
-        audioSample(audioSample), currentPosition(currentPosition) {}
-};
+#include "SoundInstance.h"
 
 class Synthesizer {
 public:
@@ -35,14 +11,19 @@ public:
 private:
     std::mutex mutex;
     Array<SoundInstance> m_sounds;
+    int m_soundCount;
     double sampleCount;
     double lastSampleCount;
 public:
-    Synthesizer() : sampleCount(0.0), lastSampleCount(0.0) {}
+    Synthesizer() : sampleCount(0.0), lastSampleCount(0.0), m_soundCount(0) {}
     void queueSound(shared_ptr<AudioSample> audioSample, int delay = 0);
 
     double currentSampleCount() const {
         return sampleCount;
+    }
+
+    int totalSoundCount() const {
+        return m_soundCount;
     }
 
     double tick() {
@@ -50,6 +31,8 @@ public:
         lastSampleCount = sampleCount;
         return result;
     }
+
+    void getSoundInstances(Array<SoundInstance>& soundInstances);
 
     void synthesize(Array<float>& samples);
 };

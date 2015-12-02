@@ -95,6 +95,7 @@
     <ClInclude Include="source\EWMAFrequency.h" />
     <ClInclude Include="source\RtAudio.h" />
     <ClInclude Include="source\SonicSculpturePiece.h" />
+    <ClInclude Include="source\SoundInstance.h" />
     <ClInclude Include="source\Synthesizer.h" />
     <ClInclude Include="source\util.h" />
   </ItemGroup>
@@ -103,10 +104,14 @@
     <ClCompile Include="source\chuck_fft.c" />
     <ClCompile Include="source\RtAudio.cpp" />
     <ClCompile Include="source\SonicSculpturePiece.cpp" />
+    <ClCompile Include="source\SoundInstance.cpp" />
     <ClCompile Include="source\Synthesizer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="data-files\scene\sculpting.Scene.Any" />
+    <None Include="data-files\shader\flatColor.pix" />
+    <None Include="data-files\shader\visualizeLines.pix" />
+    <None Include="data-files\shader\visualizeLines.vrt" />
     <None Include="Doxyfile" />
     <None Include="journal\journal.dox" />
     <None Include="mainpage.dox" />

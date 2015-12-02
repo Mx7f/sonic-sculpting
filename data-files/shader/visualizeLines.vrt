@@ -1,0 +1,24 @@
+#version 330 // -*- c++ -*-
+
+#include <compatibility.glsl>
+#include <g3dmath.glsl>
+#include <Texture/Texture.glsl>
+
+uniform_Texture(sampler2D, rawAudio_);
+
+uniform vec3 offset;
+
+uniform int numSamples;
+
+uniform vec2 waveformScale;
+void main() {
+    ivec2 ssC = ivec2(gl_VertexID % int(rawAudio_size.x), gl_VertexID / int(rawAudio_size.x));
+
+    float audioSample = texelFetch(rawAudio_buffer, ssC, 0).r;
+    // Choose X coordinate via vertex ID
+    float alpha = gl_VertexID / (numSamples - 1.0);
+    float x = (alpha*2.0 - 1.0);
+    // Modelviewprojection transform
+    vec2 xy = vec2(x, audioSample)*waveformScale;
+    gl_Position = g3d_ProjectionMatrix * vec4(g3d_WorldToCameraMatrix * vec4(vec3(xy, 0.0) + offset, 1.0), 1.0);
+}
