@@ -63,7 +63,7 @@ Sample SonicSculpturePiece::sampleAudio(int windowIndex, float alpha) {
 	// TODO: get window size from somewhere
 	int windowSize = 512;
 	// TODO: Do something better than nearest neighbors sampling...
-	return m_audioSamples[windowIndex*windowSize + (int)(alpha*windowSize)];
+	return m_audioSamples[windowIndex*windowSize + (int)(alpha*(windowSize-1))];
 }
 
 

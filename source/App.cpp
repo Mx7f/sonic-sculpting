@@ -254,10 +254,20 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
     // method from your application and rely on the base class.
 
     if (!scene()) {
+        if ((submitToDisplayMode() == SubmitToDisplayMode::MAXIMIZE_THROUGHPUT) && (!rd->swapBuffersAutomatically())) {
+            swapBuffers();
+        }
+        rd->clear();
+        rd->pushState(); {
+            rd->setProjectionAndCameraMatrix(activeCamera()->projection(), activeCamera()->frame());
+            drawDebugShapes();
+        } rd->popState();
         return;
     }
 
-    m_gbuffer->setSpecification(m_gbufferSpecification);
+    GBuffer::Specification gbufferSpec = m_gbufferSpecification;
+    extendGBufferSpecification(gbufferSpec);
+    m_gbuffer->setSpecification(gbufferSpec);
     m_gbuffer->resize(m_framebuffer->width(), m_framebuffer->height());
     m_gbuffer->prepare(rd, activeCamera(), 0, -(float)previousSimTimeStep(), m_settings.depthGuardBandThickness, m_settings.colorGuardBandThickness);
 
@@ -295,7 +305,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
 
         drawDebugShapes();
         const shared_ptr<Entity>& selectedEntity = (notNull(developerWindow) && notNull(developerWindow->sceneEditorWindow)) ? developerWindow->sceneEditorWindow->selectedEntity() : shared_ptr<Entity>();
-        scene()->visualize(rd, selectedEntity, allSurfaces, sceneVisualizationSettings());
+        scene()->visualize(rd, selectedEntity, allSurfaces, sceneVisualizationSettings(), activeCamera());
 
         // Post-process special effects
         m_depthOfField->apply(rd, m_framebuffer->texture(0), m_framebuffer->texture(Framebuffer::DEPTH), activeCamera(), m_settings.depthGuardBandThickness - m_settings.colorGuardBandThickness);
@@ -365,6 +375,17 @@ void App::onUserInput(UserInput* ui) {
 		const Ray& mouseRay = scene()->eyeRay(activeCamera(), userInput->mouseXY() + Vector2(0.5f, 0.5f), RenderDevice::current->viewport(), Vector2int16(0, 0));
 		playSculpture(mouseRay);
 	}
+
+    // Hack to get multiple cubemaps
+    if (ui->keyPressed(GKey('1'))) {
+        scene()->setTime(0.0);
+    }
+    if (ui->keyPressed(GKey('2'))) {
+        scene()->setTime(200.0);
+    }
+    if (ui->keyPressed(GKey('3'))) {
+        scene()->setTime(400.0);
+    }
 
     // Add key handling here based on the keys currently held or
     // ones that changed in the last frame.
