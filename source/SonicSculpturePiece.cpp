@@ -147,6 +147,25 @@ shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<Universal
     return s;
 }
 
+void SonicSculpturePiece::serialize(BinaryOutput& output) const {
+    m_frame.serialize(output);
+    G3D::serialize(m_audioSamples, output);
+    G3D::serialize(m_deltas, output);
+    //G3D::serialize(m_originalFrames, output);
+    G3D::serialize(m_radii, output);
+}
+
+shared_ptr<SonicSculpturePiece> SonicSculpturePiece::fromBinaryInput(shared_ptr<UniversalMaterial> material, BinaryInput& input) {
+    shared_ptr<SonicSculpturePiece> s;
+    s->m_frame.deserialize(input);
+    deserialize<float>(s->m_audioSamples, input);
+    deserialize<float>(s->m_deltas, input);
+    //deserialize<CFrame>(s->m_originalFrames, input);
+    deserialize<float>(s->m_radii, input);
+    s->m_material = material;
+    s->uploadToGPU();
+}
+
 void SonicSculpturePiece::insert(const CFrame & frame, const float radius, const float delta, const Array<float>& newSamples ) {
     m_gpuUpdated = false;
     m_originalFrames.append(frame);

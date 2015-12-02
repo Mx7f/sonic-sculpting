@@ -4,6 +4,8 @@
 #include "AudioSample.h"
 class SonicSculpturePiece {
 protected:
+    CFrame          m_frame;
+    Array<float>	m_audioSamples;
     Array<float>    m_deltas;
     Array<CFrame>   m_originalFrames;
     Array<CFrame>   m_transformedFrames;
@@ -18,10 +20,6 @@ protected:
 
     shared_ptr<UniversalMaterial> m_material;
 
-    CFrame          m_frame;
-
-	Array<float>	m_audioSamples;
-
 	Sample sampleAudio(int windowIndex, float alpha);
 
     void getTransformedFramesFromOriginals();
@@ -32,6 +30,8 @@ public:
     shared_ptr<UniversalMaterial> material() const {
         return m_material;
     }
+
+    void serialize(BinaryOutput& output) const;
 
     shared_ptr<AudioSample> getBaseAudioSample() const;
 
@@ -44,6 +44,8 @@ public:
     void render(RenderDevice* rd, const LightingEnvironment& env);
 
     void setShaderArgs(Args& args);
+
+    static shared_ptr<SonicSculpturePiece> fromBinaryInput(shared_ptr<UniversalMaterial> material, BinaryInput& input);
 
     int size() const {
         return m_originalFrames.size();
