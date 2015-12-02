@@ -1,0 +1,12 @@
+#version 330 // -*- c++ -*-
+
+uniform float pulsePos;
+
+out vec4 result;
+
+void main() {
+    float dist = abs(gl_FragCoord.x - pulsePos);
+    float t = smoothstep(1.0, 1.2, dist);
+
+    result = vec4(mix(vec3(6.0, 0.0, 0.0), vec3(0.9,0.9,0.9), t), 1.0);
+}

@@ -26,7 +26,15 @@ protected:
     G3D_DECLARE_ENUM_CLASS(AppMode, DEFAULT, MAKING_SCULPTURE);
     AppMode m_appMode;
 
+    RealTime m_lastInterestingEventTime;
+
     RtAudio m_rtAudio;
+
+    struct PlayPulse {
+        int initialSample;
+        shared_ptr<SonicSculpturePiece> piece;
+    };
+    Array<PlayPulse> m_currentPlayPulses;
 
 
     struct PlayPlane {
@@ -85,6 +93,10 @@ protected:
 
     /** Called from onInit */
     void makeGUI();
+
+    void handlePlayPulses();
+
+    void generatePlayPulse(shared_ptr<SonicSculpturePiece> piece);
 
 
 	void playSculpture(const Ray& playRay);

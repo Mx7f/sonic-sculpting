@@ -29,6 +29,11 @@ protected:
     void getCPUGeometry(CPUVertexArray& cpuVertexArray, Array<int>& cpuIndexArray) const;
     SonicSculpturePiece() : m_gpuUpdated(false) {}
 public:
+    shared_ptr<UniversalMaterial> material() const {
+        return m_material;
+    }
+
+    shared_ptr<AudioSample> getBaseAudioSample() const;
 
 	shared_ptr<AudioSample> getAudioSampleFromRay(const Ray& ray);
 

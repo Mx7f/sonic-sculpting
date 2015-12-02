@@ -110,6 +110,7 @@
   <ItemGroup>
     <None Include="data-files\scene\sculpting.Scene.Any" />
     <None Include="data-files\shader\flatColor.pix" />
+    <None Include="data-files\shader\playPulse.pix" />
     <None Include="data-files\shader\visualizeLines.pix" />
     <None Include="data-files\shader\visualizeLines.vrt" />
     <None Include="Doxyfile" />

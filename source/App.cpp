@@ -117,6 +117,7 @@ void App::onInit() {
     m_appMode = AppMode::DEFAULT;
     // TODO: Print instructions
     m_maxSavedTimeSlices = 512;
+    m_lastInterestingEventTime = System::time();
     initializeAudio();
 
     m_rawAudioTexture = Texture::createEmpty("Raw Audio Texture", g_currentAudioBuffer.size(), 1, ImageFormat::R32F());
@@ -248,6 +249,48 @@ void App::updateAudioData() {
 	} m_rawAudioMutex.unlock();
 }
 
+void App::handlePlayPulses() {
+    for (int i = m_currentPlayPulses.size() - 1; i >= 0; --i) {
+        int currentSampleIndex = (g_sampleWindowIndex * g_currentAudioBuffer.size());
+        shared_ptr<SonicSculpturePiece> piece = m_currentPlayPulses[i].piece;
+        int endIndex = m_currentPlayPulses[i].initialSample + (piece->size() * g_currentAudioBuffer.size());
+
+        RenderDevice* rd = RenderDevice::current;
+        static shared_ptr<Framebuffer> playPulseFB = Framebuffer::create("Play Pulse FB");
+        shared_ptr<UniversalMaterial> material = piece->material();
+        if (currentSampleIndex >= endIndex) {
+            
+            playPulseFB->set(Framebuffer::COLOR0, material->bsdf()->lambertian().texture());
+            rd->push2D(playPulseFB); {
+                rd->setColorClearValue(Color3::white() * 0.9f);
+                rd->clear();
+            } rd->pop2D();
+            m_currentPlayPulses.remove(i);
+            continue;
+        }
+        float alpha = float(currentSampleIndex - m_currentPlayPulses[i].initialSample) / (endIndex - m_currentPlayPulses[i].initialSample);
+        
+       
+        playPulseFB->set(Framebuffer::COLOR0, material->bsdf()->lambertian().texture());
+        rd->push2D(playPulseFB); {
+            Args args;
+            args.setUniform("pulsePos", alpha * playPulseFB->width());
+            args.setRect(rd->viewport());
+            LAUNCH_SHADER("playPulse.pix", args);
+        } rd->pop2D();
+        material->bsdf()->lambertian().texture()->generateMipMaps();
+    }
+}
+
+void App::generatePlayPulse(shared_ptr<SonicSculpturePiece> piece) {
+    PlayPulse pp;
+    pp.initialSample = g_currentAudioBuffer.size() * g_sampleWindowIndex;
+    pp.piece = piece;
+    m_currentPlayPulses.append(pp);
+    Synthesizer::global->queueSound(piece->getBaseAudioSample());
+}
+
+
 void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurfaces) {
     // This implementation is equivalent to the default GApp's. It is repeated here to make it
     // easy to modify rendering. If you don't require custom rendering, just delete this
@@ -324,6 +367,9 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
         for (int i = 0; i < soundInstances.size(); ++i) {
             int yOffset = rd->height() - 120 - (120 * i);
             Draw::rect2D(Rect2D::xywh(Point2(xOffset, yOffset), dim), rd, Color3::white(), soundInstances[i].displayTexture());
+            float playheadAlpha = ((float)soundInstances[i].currentPosition) / soundInstances[i].audioSample->buffer.size();
+            float playheadX = xOffset + (playheadAlpha * dim.x);
+            Draw::rect2D(Rect2D::xywh(Point2(playheadX, yOffset), Vector2(1, dim.y)), rd, Color3::yellow());
         }
         
     } rd->pop2D();
@@ -349,9 +395,11 @@ void App::playSculpture(const Ray& playRay) {
   int startIndex = g_sampleWindowIndex;
   for (auto piece : m_sonicSculpturePieces) {
     const shared_ptr<AudioSample>& sample = piece->getAudioSampleFromRay(playRay);
-    maxDistance = max(maxDistance, (int)ceil(sample->buffer.size() / 512.0f));
-    Synthesizer::global->queueSound(sample);
-
+    if (sample->buffer.size() > 0) {
+        maxDistance = max(maxDistance, (int)ceil(sample->buffer.size() / 512.0f));
+        Synthesizer::global->queueSound(sample);
+        m_lastInterestingEventTime = System::time();
+    }
   }
   if (maxDistance > 0) {
     PlayPlane pp;
@@ -421,15 +469,26 @@ void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
 		if (notNull(m_currentSonicSculpturePiece)) {
 			if (m_currentSonicSculpturePiece->size() > 0) {
 				m_currentSonicSculpturePiece->insert(frame, 0.0f, delta);
+                m_sonicSculpturePieces.append(m_currentSonicSculpturePiece);
+                m_lastInterestingEventTime = System::time();
 			}
-			m_sonicSculpturePieces.append(m_currentSonicSculpturePiece);
 			m_currentSonicSculpturePiece = shared_ptr<SonicSculpturePiece>();
 		}
 	} else if (m_appMode == AppMode::MAKING_SCULPTURE) {
 		if (isNull(m_currentSonicSculpturePiece)) {
-			m_currentSonicSculpturePiece = SonicSculpturePiece::create(UniversalMaterial::createDiffuse(Color3(0.9f)));
+            shared_ptr<Texture> lambertianTex = Texture::createEmpty(format("Sonic Sculpture %d", m_sonicSculpturePieces.size()), 512, 1, ImageFormat::RGBA16F());
+            static shared_ptr<Framebuffer> fb = Framebuffer::create("Sonic Sculpture Lambertian FB Clearer");
+            fb->set(Framebuffer::COLOR0, lambertianTex);
+            RenderDevice* rd = RenderDevice::current;
+            rd->push2D(fb); {
+                rd->setColorClearValue(Color3::white() * 0.9f);
+                rd->clear();
+            } rd->pop2D();
+            lambertianTex->generateMipMaps();
+            shared_ptr<UniversalMaterial> material = UniversalMaterial::createDiffuse(lambertianTex);
+			m_currentSonicSculpturePiece = SonicSculpturePiece::create(material);
 		}
-
+        m_lastInterestingEventTime = System::time();
 		// TODO: eliminate some of the redundant copies
 		Array<float> samples;
 		samples.resize(audioSampleCount);
@@ -445,6 +504,17 @@ void App::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
 	//Synthesizer::global->queueSound
 
 	updateAudioData();
+
+    if (System::time() - m_lastInterestingEventTime > 10.0) {
+        if (Random::common().uniform() < 0.001f) {
+            if (m_sonicSculpturePieces.size() > 0) {
+                int index = Random::common().integer(0, m_sonicSculpturePieces.size() - 1);
+                generatePlayPulse(m_sonicSculpturePieces[index]);
+                m_lastInterestingEventTime = System::time();
+            }
+        }
+    }
+    handlePlayPulses();
 
     // Example GUI dynamic layout code.  Resize the debugWindow to fill
     // the screen horizontally.

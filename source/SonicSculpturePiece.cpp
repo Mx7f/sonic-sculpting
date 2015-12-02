@@ -28,7 +28,7 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
             // Rotate around the axis of direction
             v.normal = Matrix3::fromAxisAngle(-frame.lookVector(), k * 2.0f * pif() / sideCount) * frame.upVector();
             v.position = currentPoint + v.normal * thickness;
-            v.texCoord0 = Point2(float(k) / sideCount, float(j) / float(segmentCount));
+            v.texCoord0 = Point2(float(j) / float(segmentCount-1), float(k) / (sideCount-1));
             v.tangent = Vector4(frame.lookVector(), 1.0f);
         }
 
@@ -66,6 +66,13 @@ Sample SonicSculpturePiece::sampleAudio(int windowIndex, float alpha) {
 	return m_audioSamples[windowIndex*windowSize + (int)(alpha*(windowSize-1))];
 }
 
+
+shared_ptr<AudioSample> SonicSculpturePiece::getBaseAudioSample() const {
+    // TODO: get sample rate from somewhere
+    shared_ptr<AudioSample> sound = AudioSample::createEmpty(440000);
+    sound->buffer.appendPOD(m_audioSamples);
+    return sound;
+}
 
 shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ray) {
 	Vector3 zAxis = -ray.direction();
