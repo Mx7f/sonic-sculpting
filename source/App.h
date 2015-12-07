@@ -26,6 +26,9 @@ protected:
     G3D_DECLARE_ENUM_CLASS(AppMode, DEFAULT, MAKING_SCULPTURE);
     AppMode m_appMode;
 
+    RealTime m_initialTime;
+
+    
     RealTime m_lastInterestingEventTime;
 
     RtAudio m_rtAudio;

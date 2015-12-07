@@ -114,9 +114,11 @@ void App::initializeAudio() {
 
 void App::onInit() {
     GApp::onInit();
-	s_app = this;
-	g_sampleWindowIndex = 0;
-	m_lastSampleWindowProcessed = 0;
+    s_app = this;
+    g_sampleWindowIndex = 0;
+    m_lastSampleWindowProcessed = 0;
+    m_initialTime = System::time();
+
     m_appMode = AppMode::DEFAULT;
     // TODO: Print instructions
     m_maxSavedTimeSlices = 512;
@@ -128,6 +130,8 @@ void App::onInit() {
 
     m_smoothedRootMeanSquare = 0.0f;
 
+
+    setFrameDuration(1.0f/30.0f);
     makeGUI();
     loadScene("Sculpting");
 }
@@ -387,7 +391,15 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
             float playheadX = xOffset + (playheadAlpha * dim.x);
             Draw::rect2D(Rect2D::xywh(Point2(playheadX, yOffset), Vector2(1, dim.y)), rd, Color3::yellow());
         }
-        
+
+
+	
+	static shared_ptr<GFont> font = GFont::fromFile(System::findDataFile("arial.fnt"));
+	float time = System::time() - m_initialTime;
+	if (time < 10.0f) {
+	  float fontAlpha = time < 9.0f ? 1.0f : 10.0f - time;
+	  font->draw2D(rd, "Press Space to Sculpt", Vector2(rd->width()/2, rd->height()-100.0f), 30.0f, Color4(Color3::black(), fontAlpha), Color4(Color3::white()*0.6f, fontAlpha), GFont::XALIGN_CENTER);
+	}
     } rd->pop2D();
 
     if ((submitToDisplayMode() == SubmitToDisplayMode::MAXIMIZE_THROUGHPUT) && (!renderDevice->swapBuffersAutomatically())) {

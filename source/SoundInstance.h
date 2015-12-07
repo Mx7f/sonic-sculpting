@@ -33,9 +33,11 @@ struct SoundInstance {
     shared_ptr<Texture> displayTexture() const {
         return m_displayTexture;
     }
-private:
+    shared_ptr<Framebuffer> m_framebuffer;
     shared_ptr<Texture> m_rawAudioTexture;
     shared_ptr<Texture> m_displayTexture;
-    shared_ptr<Framebuffer> m_framebuffer;
+
+private:
+
 };
 #endif

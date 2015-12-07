@@ -9,6 +9,9 @@ public:
     
     static shared_ptr<Synthesizer> global;
 private:
+    // Needed to keep driver from crashing OS X
+    Array<shared_ptr<Framebuffer>> m_totalHack;
+    Array<shared_ptr<Texture>> m_totalHack2;
     std::mutex mutex;
     Array<SoundInstance> m_sounds;
     int m_soundCount;
