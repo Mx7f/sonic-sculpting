@@ -550,7 +550,9 @@ void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
 void App::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
     GApp::onSimulation(rdt, sdt, idt);
 	//Synthesizer::global->queueSound
-
+    for (int i = 0; i < m_sonicSculpturePieces.size(); ++i) {
+        m_sonicSculpturePieces[i]->onSimulation(rdt, sdt, idt);
+    }
 	
 
     // Example GUI dynamic layout code.  Resize the debugWindow to fill

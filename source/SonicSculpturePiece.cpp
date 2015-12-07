@@ -1,17 +1,5 @@
 #include "SonicSculpturePiece.h"
 
-void SonicSculpturePiece::getTransformedFramesFromOriginals() {
-    m_transformedFrames.fastClear();
-    m_transformedFrames.resize(m_originalFrames.size());
-    float totalDelta = 0.0f;
-    // TODO: Find more elegant algorithm
-    for (int i = m_originalFrames.size() - 1; i >= 0; --i) {
-        m_transformedFrames[i] = m_originalFrames[i];
-        m_transformedFrames[i].translation += m_originalFrames[i].lookVector() * totalDelta;
-        totalDelta += m_deltas[i];
-    }
-}
-
 void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<int>& cpuIndexArray) const {
     int sideCount = 6;
     int segmentCount = m_transformedFrames.size();
@@ -108,8 +96,6 @@ static void uploadBones
 }
 
 void SonicSculpturePiece::uploadToGPU() {
-    getTransformedFramesFromOriginals();
-
     CPUVertexArray cpuVertexArray;
     Array<int> cpuIndexArray;
     getCPUGeometry(cpuVertexArray, cpuIndexArray);
@@ -154,7 +140,7 @@ shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ra
 	// TODO: get sample rate from somewhere
 	shared_ptr<AudioSample> sound = AudioSample::createEmpty(440000);
 
-	getTransformedFramesFromOriginals();
+	//getTransformedFramesFromOriginals();
 	Array<CFrame> raySpaceFrames;
 	for (auto& frame : m_transformedFrames) {
 		raySpaceFrames.append(rayFrame.toObjectSpace(frame));
@@ -211,6 +197,52 @@ shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<Universal
     return s;
 }
 
+void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
+    static float speed = 1.0f;
+    const Vector3& velocity = m_generalDirection * speed * sdt;
+
+    // TODO: Something more sophisticated
+    m_transformedFrames[0].translation = m_transformedFrames[0].translation + velocity;
+
+    // Construct Spline, head along it, no cool physics
+    PhysicsFrameSpline spline;
+    for (int i = 0; i < m_transformedFrames.size(); ++i) {
+        spline.append(PhysicsFrame(m_transformedFrames[i]));
+    }
+    spline.interpolationMode = SplineInterpolationMode::CUBIC;
+    float splineSampleRate = 0.2f;
+    float splineLength = 0.0f;
+    Vector3 previousPosition = m_transformedFrames[0].translation;
+    for (float p = splineSampleRate; p <= m_transformedFrames.size()-1; p += splineSampleRate) {
+        Vector3 currentPosition = spline.evaluate(p).translation;
+        splineLength += (currentPosition - previousPosition).length();
+        previousPosition = currentPosition;
+    }
+    float desiredSplineLength = 0.1f * (m_transformedFrames.size()-1);
+
+    float splineMultiplier = min(1.0f, desiredSplineLength / splineLength);
+
+    for (int i = 1; i < m_transformedFrames.size(); ++i) {
+        m_transformedFrames[i] = spline.evaluate(splineMultiplier * i);
+    }
+    uploadBones(m_boneTexture, m_transformedFrames);
+    /* Maybe do spring simulation instead?
+    
+
+    // Spring-damper system with desired separation
+    //  F = -k(|x|-d)(x/|x|) - bv
+    
+    float coefficientOfDamping = 0.1f;
+    float springStiffness = 0.1f;
+    for (int i = 1; i < m_transformedFrames.size(); ++i) {
+        float currentDistance = (m_transformedFrames[i].translation - m_transformedFrames[i - 1].translation).length();
+        Vector3 linearForce = -springStiffness * (currentDistance -
+    }
+
+    */
+
+}
+
 void SonicSculpturePiece::serialize(BinaryOutput& output) const {
     m_frame.serialize(output);
     G3D::serialize(m_audioSamples, output);
@@ -233,7 +265,11 @@ shared_ptr<SonicSculpturePiece> SonicSculpturePiece::fromBinaryInput(shared_ptr<
 
 void SonicSculpturePiece::insert(const CFrame & frame, const float radius, const float delta, const Array<float>& newSamples ) {
     m_gpuUpdated = false;
+    if (m_originalFrames.size() == 0) {
+        m_generalDirection = frame.rotation.column(2);
+    }
     m_originalFrames.append(frame);
+    m_transformedFrames.append(frame);
     m_radii.append(radius);
     m_deltas.append(delta);
 	m_audioSamples.append(newSamples);

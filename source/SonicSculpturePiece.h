@@ -8,8 +8,13 @@ protected:
     Array<float>	m_audioSamples;
     Array<float>    m_deltas;
     Array<CFrame>   m_originalFrames;
+
     Array<CFrame>   m_transformedFrames;
+    Array<CFrame>   m_previousTransformedFrames;
+
     Array<float>    m_radii;
+
+    Vector3         m_generalDirection;
 
     bool            m_gpuUpdated;
 
@@ -26,7 +31,6 @@ protected:
 
 	Sample sampleAudio(int windowIndex, float alpha);
 
-    void getTransformedFramesFromOriginals();
     void uploadToGPU();
     void getCPUGeometry(CPUVertexArray& cpuVertexArray, Array<int>& cpuIndexArray) const;
     SonicSculpturePiece() : m_gpuUpdated(false) {}
@@ -34,6 +38,8 @@ public:
     shared_ptr<UniversalMaterial> material() const {
         return m_material;
     }
+
+    void onSimulation(RealTime rdt, SimTime sdt, SimTime idt);
 
     void serialize(BinaryOutput& output) const;
 
