@@ -16,7 +16,11 @@ protected:
     AttributeArray  m_vertices;
     AttributeArray  m_texCoord;
     AttributeArray  m_normals;
+    AttributeArray  m_boneIndices;
+    AttributeArray  m_boneWeights;
     IndexStream     m_indices;
+
+    shared_ptr<Texture> m_boneTexture;
 
     shared_ptr<UniversalMaterial> m_material;
 

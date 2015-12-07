@@ -7,7 +7,7 @@ G3D_START_AT_MAIN();
 
 
 static App* s_app = NULL;
-
+#define DEV_MODE 1
 int main(int argc, const char* argv[]) {
     (void)argc; (void)argv;
     GApp::Settings settings(argc, argv);
@@ -18,7 +18,9 @@ int main(int argc, const char* argv[]) {
     settings.window.height      = 720;
     settings.window.asynchronous = false;
     settings.window.resizable = true;
-    settings.window.fullScreen = true;
+
+    settings.window.fullScreen = DEV_MODE == 0;
+
     settings.window.caption = "Sonic Sculpting";
     settings.dataDir = FileSystem::currentDirectory();
     settings.screenshotDirectory = "../journal/";

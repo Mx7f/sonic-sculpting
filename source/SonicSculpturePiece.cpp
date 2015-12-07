@@ -17,19 +17,27 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
     int segmentCount = m_transformedFrames.size();
     int currentPointIndex = 0;
     cpuVertexArray.vertex.resize(segmentCount*sideCount);
+    cpuVertexArray.hasBones = true;
+    cpuVertexArray.boneIndices.resize(segmentCount*sideCount);
+    cpuVertexArray.boneWeights.resize(segmentCount*sideCount);
+
     for (int j = 0; j < segmentCount; ++j) {
         const CFrame& frame = m_transformedFrames[j];
         const float thickness = m_radii[j];
-        const Point3& currentPoint = frame.translation;
+        const Point3& currentPoint = Point3(0.0, 0.0, 0.0);
 
         for (int k = 0; k < sideCount; ++k) {
-            CPUVertexArray::Vertex& v = cpuVertexArray.vertex[currentPointIndex * sideCount + k];
-
-            // Rotate around the axis of direction
-            v.normal = Matrix3::fromAxisAngle(-frame.lookVector(), k * 2.0f * pif() / sideCount) * frame.upVector();
+            int index = currentPointIndex * sideCount + k;
+            CPUVertexArray::Vertex& v = cpuVertexArray.vertex[index];
+            float theta = k * 2.0f * pif() / sideCount;
+            v.normal = Vector3(cos(theta), sin(theta), 0.0f);
             v.position = currentPoint + v.normal * thickness;
             v.texCoord0 = Point2(float(j) / float(segmentCount-1), float(k) / (sideCount-1));
-            v.tangent = Vector4(frame.lookVector(), 1.0f);
+            v.tangent = Vector4(Vector3::unitZ(), 1.0f);
+
+            cpuVertexArray.boneIndices[index] = Vector4int32(j, j, j, j);
+            cpuVertexArray.boneWeights[index] = Vector4(1.0f, 0.0f, 0.0f, 0.0f);
+
         }
 
         if (j > 0) {
@@ -46,6 +54,59 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
     }
 }
 
+
+
+static void uploadBones
+(const shared_ptr<Texture>& boneTexture,
+    const Array<CFrame>&    boneMatrices) {
+
+    if (notNull(boneTexture)) {
+        // Copy Bones to GPU
+        const shared_ptr<CPUPixelTransferBuffer>& pixelBuffer =
+            CPUPixelTransferBuffer::create(boneTexture->width(),
+                boneTexture->height(),
+                boneTexture->format());
+        Vector4* row0 = (Vector4*)pixelBuffer->row(0);
+        Vector4* row1 = (Vector4*)pixelBuffer->row(1);
+
+        for (int i = 0; i < boneMatrices.size(); ++i) {
+            const CFrame& boneFrame = boneMatrices[i];
+            /* Unoptimized but readable version:
+            const Matrix4& boneMatrix = boneFrame.toMatrix4();
+            *row0   = boneMatrix.column(0);
+            *row1   = boneMatrix.column(1);
+            ++row0; ++row1;
+            *row0   = boneMatrix.column(2);
+            *row1   = boneMatrix.column(3);
+            ++row0; ++row1;
+            */
+            const Matrix3& R = boneFrame.rotation;
+            const Vector3& T = boneFrame.translation;
+            row0->x = R[0][0];
+            row0->y = R[1][0];
+            row0->z = R[2][0];
+            row0->w = 0.0f;
+            row1->x = R[0][1];
+            row1->y = R[1][1];
+            row1->z = R[2][1];
+            row1->w = 0.0f;
+            ++row0; ++row1;
+
+            row0->x = R[0][2];
+            row0->y = R[1][2];
+            row0->z = R[2][2];
+            row0->w = 0.0f;
+            row1->x = T.x;
+            row1->y = T.y;
+            row1->z = T.z;
+            row1->w = 1.0f;
+            ++row0; ++row1;
+        }
+
+        boneTexture->update(pixelBuffer);
+    }
+}
+
 void SonicSculpturePiece::uploadToGPU() {
     getTransformedFramesFromOriginals();
 
@@ -53,9 +114,12 @@ void SonicSculpturePiece::uploadToGPU() {
     Array<int> cpuIndexArray;
     getCPUGeometry(cpuVertexArray, cpuIndexArray);
     AttributeArray ignore;
-    cpuVertexArray.copyToGPU(m_vertices, m_normals, ignore, m_texCoord, ignore, ignore, VertexBuffer::WRITE_ONCE);
+    cpuVertexArray.copyToGPU(m_vertices, m_normals, ignore, m_texCoord, ignore, ignore, m_boneIndices, m_boneWeights, VertexBuffer::WRITE_ONCE);
     m_indices = IndexStream(cpuIndexArray, VertexBuffer::create(sizeof(int)*cpuIndexArray.size() + 8));
-    
+    m_boneTexture = Texture::createEmpty("Sonic Sculpture Bone Texture", m_transformedFrames.size() * 2, 2, ImageFormat::RGBA32F());
+
+    uploadBones(m_boneTexture, m_transformedFrames); 
+
     m_gpuUpdated = true;
 }
 
@@ -164,6 +228,7 @@ shared_ptr<SonicSculpturePiece> SonicSculpturePiece::fromBinaryInput(shared_ptr<
     deserialize<float>(s->m_radii, input);
     s->m_material = material;
     s->uploadToGPU();
+    return s; 
 }
 
 void SonicSculpturePiece::insert(const CFrame & frame, const float radius, const float delta, const Array<float>& newSamples ) {
@@ -188,15 +253,20 @@ void SonicSculpturePiece::render(RenderDevice * rd, const LightingEnvironment& e
     LAUNCH_SHADER("UniversalSurface/UniversalSurface_render.*", args);
 }
 
+
+
 void SonicSculpturePiece::setShaderArgs(Args & args) {
     if (!m_gpuUpdated) {
         uploadToGPU();
     }
+    args.setUniform("boneMatrixTexture", m_boneTexture, Sampler::buffer());
     args.setAttributeArray("g3d_Vertex", m_vertices);
     args.setAttributeArray("g3d_Normal", m_normals);
     args.setAttributeArray("g3d_TexCoord0", m_texCoord);
+    args.setAttributeArray("g3d_BoneWeights", m_boneWeights);
+    args.setAttributeArray("g3d_BoneIndices", m_boneIndices);
     args.setIndexStream(m_indices);
-    args.setMacro("NUM_BONES", 0);
+    args.setMacro("NUM_BONES", m_transformedFrames.size());
     args.setMacro("NUM_LIGHTMAP_DIRECTIONS", 0);
     args.setMacro("HAS_VERTEX_COLOR", 0);
     args.setMacro("HAS_ALPHA", m_material->hasAlpha());
