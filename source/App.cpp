@@ -117,6 +117,9 @@ void App::initializeAudio() {
 void App::onInit() {
     GApp::onInit();
     s_app = this;
+
+    m_freezeEverything = false;
+
     g_sampleWindowIndex = 0;
     m_lastSampleWindowProcessed = 0;
     m_initialTime = System::time();
@@ -474,6 +477,15 @@ void App::onUserInput(UserInput* ui) {
             scene()->typedEntity<VisibleEntity>(name)->setVisible(!visible);
         }
     }
+
+    if (ui->keyPressed(GKey('f'))) {
+        m_freezeEverything = !m_freezeEverything;
+        for (shared_ptr<SonicSculpturePiece>& piece : m_sonicSculpturePieces) {
+            piece->setFrozen(m_freezeEverything);
+        }
+    }
+
+    
 
     // Hack to get multiple cubemaps
     if (ui->keyPressed(GKey::PERIOD)) {

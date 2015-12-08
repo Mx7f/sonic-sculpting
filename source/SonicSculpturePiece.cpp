@@ -194,6 +194,7 @@ shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ra
 shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<UniversalMaterial> material) {
     shared_ptr<SonicSculpturePiece> s(new SonicSculpturePiece());
     s->m_material = material;
+    s->m_frozen = false;
     return s;
 }
 
@@ -215,9 +216,11 @@ static PhysicsFrame evalAtApproxLength(const PhysicsFrameSpline& spline, float d
 }
 
 void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
+    if (m_frozen) {
+        return;
+    }
     static float speed = 3.0f;
     
-
     // Pull towards the center. Might want to have it be a pull towards a sphere near the center instead
     m_generalDirection = (m_generalDirection + (-m_transformedFrames[0].translation)*0.01f).direction();
 

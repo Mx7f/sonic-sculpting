@@ -28,6 +28,8 @@ protected:
 
     RealTime m_initialTime;
 
+    bool m_freezeEverything;
+
     
     RealTime m_lastInterestingEventTime;
 

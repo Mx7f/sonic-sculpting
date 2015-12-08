@@ -29,6 +29,8 @@ protected:
 
     shared_ptr<UniversalMaterial> m_material;
 
+    bool m_frozen;
+
 	Sample sampleAudio(int windowIndex, float alpha);
 
     void uploadToGPU();
@@ -59,6 +61,10 @@ public:
 
     int size() const {
         return m_originalFrames.size();
+    }
+
+    void setFrozen(bool b) {
+        m_frozen = b;
     }
     
 };
