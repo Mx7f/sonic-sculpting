@@ -216,10 +216,21 @@ static PhysicsFrame evalAtApproxLength(const PhysicsFrameSpline& spline, float d
 
 void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
     static float speed = 3.0f;
+    
+
+    // Pull towards the center. Might want to have it be a pull towards a sphere near the center instead
+    m_generalDirection = (m_generalDirection + (-m_transformedFrames[0].translation)*0.01f).direction();
+
+    m_transformedFrames[0].rotation = Matrix3::fromColumns(cross(m_generalDirection, m_transformedFrames[0].upVector()), m_transformedFrames[0].upVector(), -m_generalDirection);
+
     const Vector3& velocity = m_generalDirection * speed * sdt;
 
+
+    //PhysicsFrame(m_transformedFrames[0])
     // TODO: Something more sophisticated
     m_transformedFrames[0].translation = m_transformedFrames[0].translation + velocity;
+
+    
 
     // Construct Spline, head along it, no cool physics
     PhysicsFrameSpline spline;
