@@ -355,7 +355,7 @@ void SonicSculpturePiece::setShaderArgs(Args & args) {
     args.setMacro("HAS_ALPHA", m_material->hasAlpha());
     args.setMacro("ALPHA_HINT", m_material->alphaHint());
     args.setMacro("HAS_TRANSMISSIVE", m_material->hasTransmissive());
-    args.setMacro("HAS_EMISSIVE", false);
+    args.setMacro("HAS_EMISSIVE", 1);
 
     m_material->setShaderArgs(args, "material.");
 }

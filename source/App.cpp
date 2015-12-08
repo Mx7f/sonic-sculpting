@@ -272,9 +272,9 @@ void App::handlePlayPulses() {
         shared_ptr<UniversalMaterial> material = piece->material();
         if (currentSampleIndex >= endIndex) {
             
-            playPulseFB->set(Framebuffer::COLOR0, material->bsdf()->lambertian().texture());
+            playPulseFB->set(Framebuffer::COLOR0, material->emissive().texture());
             rd->push2D(playPulseFB); {
-                rd->setColorClearValue(Color3::white() * 0.9f);
+                rd->setColorClearValue(Color3::black());
                 rd->clear();
             } rd->pop2D();
             m_currentPlayPulses.remove(i);
@@ -283,14 +283,14 @@ void App::handlePlayPulses() {
         float alpha = float(currentSampleIndex - m_currentPlayPulses[i].initialSample) / (endIndex - m_currentPlayPulses[i].initialSample);
         
        
-        playPulseFB->set(Framebuffer::COLOR0, material->bsdf()->lambertian().texture());
+        playPulseFB->set(Framebuffer::COLOR0, material->emissive().texture());
         rd->push2D(playPulseFB); {
             Args args;
             args.setUniform("pulsePos", alpha * playPulseFB->width());
             args.setRect(rd->viewport());
             LAUNCH_SHADER("playPulse.pix", args);
         } rd->pop2D();
-        material->bsdf()->lambertian().texture()->generateMipMaps();
+        material->emissive().texture()->generateMipMaps();
     }
 }
 
@@ -545,7 +545,21 @@ void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
                 rd->clear();
             } rd->pop2D();
             lambertianTex->generateMipMaps();
-            shared_ptr<UniversalMaterial> material = UniversalMaterial::createDiffuse(lambertianTex);
+            UniversalMaterial::Specification spec;
+            spec.setLambertian(lambertianTex);
+            static uint32 dummyBytes[512];
+            for (int i = 0; i < 512; ++i) {
+                dummyBytes[i] = 4294967295;
+            }
+            shared_ptr<Texture> emissiveTex = Texture::fromMemory(format("Sonic Sculpture %d Emissive", m_sonicSculpturePieces.size()), dummyBytes, ImageFormat::RGBA8(), 512, 1, 1,1, ImageFormat::RGBA16F());
+            fb->set(Framebuffer::COLOR0, emissiveTex);
+            rd->push2D(fb); {
+                rd->setColorClearValue(Color3::black());
+                rd->clear();
+            } rd->pop2D();
+            spec.setEmissive(emissiveTex);
+            //spec.setBump(System::findDataFile("material/10538-bump.jpg"));
+            shared_ptr<UniversalMaterial> material = UniversalMaterial::create(spec);
 			m_currentSonicSculpturePiece = SonicSculpturePiece::create(material);
 		}
         m_lastInterestingEventTime = System::time();
