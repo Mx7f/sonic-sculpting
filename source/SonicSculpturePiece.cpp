@@ -197,8 +197,25 @@ shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<Universal
     return s;
 }
 
+
+static PhysicsFrame evalAtApproxLength(const PhysicsFrameSpline& spline, float d, float splineSampleRate, const Array<float>& splineLengths) {
+    float t = 0.0f;
+    int i = 0;
+    for (; i < splineLengths.size(); ++i) {
+        if (splineLengths[i] > d) {
+            break;
+        }
+    }
+    if (i == splineLengths.size()) {
+        return spline.evaluate(splineSampleRate * splineLengths.size());
+    }
+    float alpha = (d - splineLengths[i - 1]) / (splineLengths[i] - splineLengths[i - 1]);
+    
+    return spline.evaluate( ((i-1)+ alpha)*splineSampleRate );
+}
+
 void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
-    static float speed = 1.0f;
+    static float speed = 3.0f;
     const Vector3& velocity = m_generalDirection * speed * sdt;
 
     // TODO: Something more sophisticated
@@ -206,25 +223,41 @@ void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
 
     // Construct Spline, head along it, no cool physics
     PhysicsFrameSpline spline;
+    spline.extrapolationMode = SplineExtrapolationMode::LINEAR;
     for (int i = 0; i < m_transformedFrames.size(); ++i) {
         spline.append(PhysicsFrame(m_transformedFrames[i]));
     }
     spline.interpolationMode = SplineInterpolationMode::CUBIC;
-    float splineSampleRate = 0.2f;
+    float splineSampleRate = 0.1f;
     float splineLength = 0.0f;
     Vector3 previousPosition = m_transformedFrames[0].translation;
-    for (float p = splineSampleRate; p <= m_transformedFrames.size()-1; p += splineSampleRate) {
-        Vector3 currentPosition = spline.evaluate(p).translation;
-        splineLength += (currentPosition - previousPosition).length();
+    float epsilon = 0.000001f;
+    for (int i = 1; i < m_transformedFrames.size(); ++i) {
+        Vector3 currentPosition = spline.evaluate(i).translation;
+        splineLength += (currentPosition - previousPosition).length() + epsilon;
+        spline.time[i] = splineLength;
         previousPosition = currentPosition;
     }
-    float desiredSplineLength = 0.1f * (m_transformedFrames.size()-1);
+    float lengthPerSegment = 0.1f;
+    float desiredSplineLength = lengthPerSegment*(m_transformedFrames.size()-1);
 
-    float splineMultiplier = min(1.0f, desiredSplineLength / splineLength);
+    float splineMultiplier = min(0.99f, desiredSplineLength / splineLength);
+    //lengthPerSegment *= splineMultiplier;
 
     for (int i = 1; i < m_transformedFrames.size(); ++i) {
-        m_transformedFrames[i] = spline.evaluate(splineMultiplier * i);
+        float d = splineLength * splineMultiplier * i / (m_transformedFrames.size() - 1.0f);
+        m_transformedFrames[i] = spline.evaluate(d);
     }
+
+    if (m_transformedFrames.size() > 30) {
+        for (int i = 1; i < m_transformedFrames.size(); ++i) {
+            float d = (m_transformedFrames[i].translation - m_transformedFrames[i - 1].translation).length();
+            debugPrintf("%d: %f\n", i, d);
+        }
+        debugPrintf("----------\n");
+    }
+
+
     uploadBones(m_boneTexture, m_transformedFrames);
     /* Maybe do spring simulation instead?
     
@@ -266,7 +299,7 @@ shared_ptr<SonicSculpturePiece> SonicSculpturePiece::fromBinaryInput(shared_ptr<
 void SonicSculpturePiece::insert(const CFrame & frame, const float radius, const float delta, const Array<float>& newSamples ) {
     m_gpuUpdated = false;
     if (m_originalFrames.size() == 0) {
-        m_generalDirection = frame.rotation.column(2);
+        m_generalDirection = -frame.rotation.column(2);
     }
     m_originalFrames.append(frame);
     m_transformedFrames.append(frame);

@@ -553,6 +553,9 @@ void App::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
     for (int i = 0; i < m_sonicSculpturePieces.size(); ++i) {
         m_sonicSculpturePieces[i]->onSimulation(rdt, sdt, idt);
     }
+    if (notNull(m_currentSonicSculpturePiece)) {
+        m_currentSonicSculpturePiece->onSimulation(rdt, sdt, idt);
+    }
 	
 
     // Example GUI dynamic layout code.  Resize the debugWindow to fill
