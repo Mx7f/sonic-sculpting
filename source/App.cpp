@@ -60,10 +60,19 @@ int audioCallback( void * outputBuffer, void * inputBuffer, unsigned int numFram
 	// TODO: remove g_currentAudioBuffer... our mutex scheme handles everything just fine
 	// Copy input buffer, handle race condition by not caring about it.
 	memcpy(g_currentAudioBuffer.getCArray(), inputBuffer, numBytes);
+
+    // For debugging
+    /*
+    for (int i = 0; i < numFrames; ++i) {
+        int sampleIndex = (numFrames*g_sampleWindowIndex + i);
+        //debugPrintf("sampleIndex: %d\n", sampleIndex);
+        g_currentAudioBuffer[i] = sin(2*pif()*sampleIndex*(1.0/511.0));
+    }*/
+
 	s_app->m_rawAudioMutex.lock(); {
 		++g_sampleWindowIndex;
 		s_app->m_cpuRawAudioData.appendPOD(g_currentAudioBuffer);
-        debugPrintf("g_currentAudioBuffer.size() = %d\nm_cpuRawAudioData.size() = %d\n", g_currentAudioBuffer.size(), s_app->m_cpuRawAudioData.size());
+        //debugPrintf("g_currentAudioBuffer.size() = %d\nm_cpuRawAudioData.size() = %d\n", g_currentAudioBuffer.size(), s_app->m_cpuRawAudioData.size());
 	}s_app->m_rawAudioMutex.unlock();
 	return 0;
 }
@@ -190,23 +199,24 @@ void App::updateAudioData() {
     int sampleCount = g_currentAudioBuffer.size();
     int freqCount = sampleCount / 2;
     int numStoredTimeSlices = 0;
+    int numNewWindows = 0;
     m_rawAudioMutex.lock(); {
         numStoredTimeSlices = m_cpuRawAudioData.size() / sampleCount;
         if (numStoredTimeSlices >= m_maxSavedTimeSlices) {
+            int cutoffCount = numStoredTimeSlices - (m_maxSavedTimeSlices - 1);
             int newTotalSampleCount = sampleCount*(m_maxSavedTimeSlices - 1);
 
             for (int i = 0; i < newTotalSampleCount; ++i) {
-                m_cpuRawAudioData[i] = m_cpuRawAudioData[i + sampleCount];
+                m_cpuRawAudioData[i] = m_cpuRawAudioData[i + sampleCount*cutoffCount];
             }
             m_cpuRawAudioData.resize(newTotalSampleCount);
             numStoredTimeSlices = m_cpuRawAudioData.size() / sampleCount;
         }
         m_cpuRawAudioSnapshot.fastClear();
         m_cpuRawAudioSnapshot.appendPOD(m_cpuRawAudioData);
+        numNewWindows = g_sampleWindowIndex - m_lastSampleWindowProcessed;
+        m_lastSampleWindowProcessed = g_sampleWindowIndex;
     } m_rawAudioMutex.unlock();
-
-
-	int numNewWindows = g_sampleWindowIndex - m_lastSampleWindowProcessed;
 
 	for (int n = numNewWindows - 1; n >= 0; --n) {
 		float sumSquare = 0.0f;
@@ -224,8 +234,7 @@ void App::updateAudioData() {
 	m_rawAudioTexture->update(ptb);
 
 		
-
-	m_lastSampleWindowProcessed = g_sampleWindowIndex;
+	
 }
 
 void App::handlePlayPulses() {
