@@ -63,6 +63,7 @@ int audioCallback( void * outputBuffer, void * inputBuffer, unsigned int numFram
 	s_app->m_rawAudioMutex.lock(); {
 		++g_sampleWindowIndex;
 		s_app->m_cpuRawAudioData.appendPOD(g_currentAudioBuffer);
+        debugPrintf("g_currentAudioBuffer.size() = %d\nm_cpuRawAudioData.size() = %d\n", g_currentAudioBuffer.size(), s_app->m_cpuRawAudioData.size());
 	}s_app->m_rawAudioMutex.unlock();
 	return 0;
 }
@@ -126,7 +127,7 @@ void App::onInit() {
 
     m_appMode = AppMode::DEFAULT;
     // TODO: Print instructions
-    m_maxSavedTimeSlices = 512;
+    m_maxSavedTimeSlices = 128;
     m_lastInterestingEventTime = System::time();
     initializeAudio();
 
@@ -186,79 +187,45 @@ void App::setAudioShaderArgs(Args& args) {
 }
 
 void App::updateAudioData() {
-	m_rawAudioMutex.lock(); {
+    int sampleCount = g_currentAudioBuffer.size();
+    int freqCount = sampleCount / 2;
+    int numStoredTimeSlices = 0;
+    m_rawAudioMutex.lock(); {
+        numStoredTimeSlices = m_cpuRawAudioData.size() / sampleCount;
+        if (numStoredTimeSlices >= m_maxSavedTimeSlices) {
+            int newTotalSampleCount = sampleCount*(m_maxSavedTimeSlices - 1);
 
-		int sampleCount = g_currentAudioBuffer.size();
-		int freqCount = sampleCount / 2;
+            for (int i = 0; i < newTotalSampleCount; ++i) {
+                m_cpuRawAudioData[i] = m_cpuRawAudioData[i + sampleCount];
+            }
+            m_cpuRawAudioData.resize(newTotalSampleCount);
+            numStoredTimeSlices = m_cpuRawAudioData.size() / sampleCount;
+        }
+        m_cpuRawAudioSnapshot.fastClear();
+        m_cpuRawAudioSnapshot.appendPOD(m_cpuRawAudioData);
+    } m_rawAudioMutex.unlock();
 
-		int numNewWindows = g_sampleWindowIndex - m_lastSampleWindowProcessed;
 
-		for (int n = numNewWindows - 1; n >= 0; --n) {
-			float sumSquare = 0.0f;
-			for (int i = m_cpuRawAudioData.size() - (sampleCount*(n+1)); i < m_cpuRawAudioData.size() - (sampleCount*n); ++i) {
-				sumSquare += square(m_cpuRawAudioData[i]);
-			}
-			float rms = sqrt(sumSquare / sampleCount);
-			m_smoothedRootMeanSquare = lerp(rms, m_smoothedRootMeanSquare, 0.8f);
+	int numNewWindows = g_sampleWindowIndex - m_lastSampleWindowProcessed;
 
-			updateSonicSculpture(m_cpuRawAudioData.size() - (sampleCount*(n + 1)), sampleCount);
+	for (int n = numNewWindows - 1; n >= 0; --n) {
+		float sumSquare = 0.0f;
+		for (int i = m_cpuRawAudioSnapshot.size() - (sampleCount*(n+1)); i < m_cpuRawAudioSnapshot.size() - (sampleCount*n); ++i) {
+			sumSquare += square(m_cpuRawAudioSnapshot[i]);
 		}
+		float rms = sqrt(sumSquare / sampleCount);
+		m_smoothedRootMeanSquare = lerp(rms, m_smoothedRootMeanSquare, 0.8f);
+
+		updateSonicSculpture(m_cpuRawAudioSnapshot.size() - (sampleCount*(n + 1)), sampleCount);
+	}
+		
+	shared_ptr<CPUPixelTransferBuffer> ptb = CPUPixelTransferBuffer::fromData(sampleCount, numStoredTimeSlices, ImageFormat::R32F(), m_cpuRawAudioSnapshot.getCArray());
+	m_rawAudioTexture->resize(sampleCount, numStoredTimeSlices);
+	m_rawAudioTexture->update(ptb);
+
 		
 
-		int numStoredTimeSlices = m_cpuRawAudioData.size() / sampleCount;
-		shared_ptr<CPUPixelTransferBuffer> ptb = CPUPixelTransferBuffer::fromData(sampleCount, numStoredTimeSlices, ImageFormat::R32F(), m_cpuRawAudioData.getCArray());
-		m_rawAudioTexture->resize(sampleCount, numStoredTimeSlices);
-		m_rawAudioTexture->update(ptb);
-
-		/*
-		Array<complex> frequency;
-		frequency.resize(freqCount);
-		float* currentRawAudioDataPtr = m_cpuRawAudioData.getCArray() + (m_cpuRawAudioData.size() - sampleCount);
-		memcpy(frequency.getCArray(), currentRawAudioDataPtr, sizeof(float)*sampleCount);
-		rfft((float*)frequency.getCArray(), frequency.size(), FFT_FORWARD);
-		m_cpuFrequencyAudioData.appendPOD(frequency);
-
-
-		Array<float> frequencyMagnitude;
-		for (complex c : frequency) {
-			frequencyMagnitude.append(cmp_abs(c));
-		}
-		if (isNull(m_fastMovingAverage.gpuData)) {
-			m_fastMovingAverage.init(0.6, frequencyMagnitude, "Fast Freq EWMA");
-			m_slowMovingAverage.init(0.85, frequencyMagnitude, "Slow Freq EWMA");
-			m_glacialMovingAverage.init(0.95, frequencyMagnitude, "Glacial Freq EWMA");
-		}
-		else {
-			m_fastMovingAverage.update(frequencyMagnitude);
-			m_slowMovingAverage.update(frequencyMagnitude);
-			m_glacialMovingAverage.update(frequencyMagnitude);
-		}
-
-		shared_ptr<CPUPixelTransferBuffer> freqPTB = CPUPixelTransferBuffer::fromData(freqCount, numStoredTimeSlices, ImageFormat::RG32F(), m_cpuFrequencyAudioData.getCArray());
-
-		m_frequencyAudioTexture->resize(freqCount, numStoredTimeSlices);
-		m_frequencyAudioTexture->update(freqPTB);
-		*/
-
-
-		if (numStoredTimeSlices >= m_maxSavedTimeSlices) {
-			int newTotalSampleCount = sampleCount*(numStoredTimeSlices - 1);
-		
-			for (int i = 0; i < newTotalSampleCount; ++i) {
-				m_cpuRawAudioData[i] = m_cpuRawAudioData[i + sampleCount];
-			}
-			m_cpuRawAudioData.resize(newTotalSampleCount);
-			/*
-			int newTotalFrequencyCount = (sampleCount / 2)*(numStoredTimeSlices - 1);
-			for (int i = 0; i < newTotalFrequencyCount; ++i) {
-				m_cpuFrequencyAudioData[i] = m_cpuFrequencyAudioData[i + freqCount];
-			}
-			m_cpuFrequencyAudioData.resize(newTotalFrequencyCount);
-			*/
-		}
-
-		m_lastSampleWindowProcessed = g_sampleWindowIndex;
-	} m_rawAudioMutex.unlock();
+	m_lastSampleWindowProcessed = g_sampleWindowIndex;
 }
 
 void App::handlePlayPulses() {
@@ -277,6 +244,7 @@ void App::handlePlayPulses() {
                 rd->setColorClearValue(Color3::black());
                 rd->clear();
             } rd->pop2D();
+            material->emissive().texture()->generateMipMaps();
             m_currentPlayPulses.remove(i);
             continue;
         }
@@ -557,6 +525,7 @@ void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
                 rd->setColorClearValue(Color3::black());
                 rd->clear();
             } rd->pop2D();
+            emissiveTex->generateMipMaps();
             spec.setEmissive(emissiveTex);
             //spec.setBump(System::findDataFile("material/10538-bump.jpg"));
             shared_ptr<UniversalMaterial> material = UniversalMaterial::create(spec);
@@ -567,7 +536,7 @@ void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
 		Array<float> samples;
 		samples.resize(audioSampleCount);
 		for (int i = 0; i < audioSampleCount; ++i) {
-			samples[i] = m_cpuRawAudioData[i + audioSampleOffset];
+			samples[i] = m_cpuRawAudioSnapshot[i + audioSampleOffset];
 		}
 		m_currentSonicSculpturePiece->insert(frame, radius, delta, samples);
 	}

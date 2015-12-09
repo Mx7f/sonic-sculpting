@@ -129,8 +129,12 @@ public:
 	// TODO: rethink access patterns to not have public member variables
 	/** Make sure raw audio is only touched by one thread at a time*/
 	std::mutex m_rawAudioMutex;
-	/** CPU storage of raw samples */
+
+	/** CPU storage of raw samples, access by multiple threads */
 	Array<float> m_cpuRawAudioData;
+
+    /** Copy of m_cpuRawAudioData at a moment in time, so that we can directly use this on the main thread without locking for long  */
+    Array<float> m_cpuRawAudioSnapshot;
 
 };
 

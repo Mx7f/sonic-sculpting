@@ -263,13 +263,13 @@ void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
         m_transformedFrames[i] = spline.evaluate(d);
     }
 
-    if (m_transformedFrames.size() > 30) {
+   /* if (m_transformedFrames.size() > 30) {
         for (int i = 1; i < m_transformedFrames.size(); ++i) {
             float d = (m_transformedFrames[i].translation - m_transformedFrames[i - 1].translation).length();
             debugPrintf("%d: %f\n", i, d);
         }
         debugPrintf("----------\n");
-    }
+    }*/
 
 
     uploadBones(m_boneTexture, m_transformedFrames);
