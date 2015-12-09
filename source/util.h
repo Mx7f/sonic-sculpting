@@ -20,4 +20,6 @@ static double getFrequencyFromKey(PianoKey p, int octave) {
   return pianoKeyNumberToFrequency(pianoKeyNameAndOctaveToIndex(p, octave));
 }
 
+#define METERS_PER_SAMPLE_WINDOW 0.1f
+
 #endif

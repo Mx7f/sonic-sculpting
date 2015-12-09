@@ -124,6 +124,83 @@ shared_ptr<AudioSample> SonicSculpturePiece::getBaseAudioSample() const {
     return sound;
 }
 
+static float indexToSampleZ(int i) {
+    double delta = METERS_PER_SAMPLE_WINDOW;
+    double metersPerSample = delta / 512.0;
+    return -i * metersPerSample;
+}
+
+int getIndexOfClosestSampleRoundedDown(float gatherZ, const Array<float>& sampleZs, bool backwards) {
+    if (backwards) {
+        int index = 0;
+        // TODO: Check for infinite looping
+        while (sampleZs[index] > gatherZ && index < sampleZs.size()-1) {
+            ++index;
+        }
+        return index;
+    }
+    int index = sampleZs.size() - 1;
+    // TODO: Check for infinite looping
+    while (sampleZs[index] > gatherZ && index > 0) {
+        --index;
+    }
+    return index;
+}
+
+
+static void resampleAudio(shared_ptr<AudioSample> sound, bool zPositive, int sectionStartIndex, const Array<float>& sampleZs, const Array<Sample>& audioBuffer) {
+    double delta = METERS_PER_SAMPLE_WINDOW;
+    double metersPerSample = delta / 512.0;
+    
+    if (zPositive) {
+        float minZ = sampleZs[0];
+        float maxZ = sampleZs[sampleZs.size() - 1];
+        int bufferIndexStart = max(0, (int)(-maxZ / metersPerSample));
+        int bufferIndexEnd = (int)(-minZ / metersPerSample) + 1;
+
+        if (sound->buffer.size() < bufferIndexEnd + 1) {
+            int oldSize = sound->buffer.size();
+            sound->buffer.resize(bufferIndexEnd + 1);
+            for (int j = oldSize; j < sound->buffer.size(); ++j) {
+                sound->buffer[j] = 0.0f;
+            }
+        }
+
+        for (int j = bufferIndexStart; j <= bufferIndexEnd; ++j) {
+            float gatherZ = indexToSampleZ(j);
+            // TODO: increase perf
+            int indexInSampleZs = getIndexOfClosestSampleRoundedDown(gatherZ, sampleZs, false);
+            int indexInSculpture = indexInSampleZs + sectionStartIndex * 512;
+            // TODO: Bilinear interpolation
+            sound->buffer[j] = audioBuffer[indexInSculpture];
+        }
+
+    } else {
+        float minZ = sampleZs[sampleZs.size() - 1];
+        float maxZ = sampleZs[0];
+        int bufferIndexStart = max(0, (int)(-maxZ / metersPerSample));
+        int bufferIndexEnd = (int)(-minZ / metersPerSample) + 1;
+
+        if (sound->buffer.size() < bufferIndexEnd + 1) {
+            int oldSize = sound->buffer.size();
+            sound->buffer.resize(bufferIndexEnd + 1);
+            for (int j = oldSize; j < sound->buffer.size(); ++j) {
+                sound->buffer[j] = 0.0f;
+            }
+        }
+
+        for (int j = bufferIndexStart; j <= bufferIndexEnd; ++j) {
+            float gatherZ = indexToSampleZ(j);
+            // TODO: increase perf
+            int indexInSampleZs = getIndexOfClosestSampleRoundedDown(gatherZ, sampleZs, true);
+            int indexInSculpture = indexInSampleZs + sectionStartIndex * 512;
+            // TODO: Bilinear interpolation
+            sound->buffer[j] = audioBuffer[indexInSculpture];
+        }
+
+    }
+}
+
 shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ray) {
 	Vector3 zAxis = -ray.direction();
 	Vector3 xAxis;
@@ -146,46 +223,32 @@ shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ra
 		raySpaceFrames.append(rayFrame.toObjectSpace(frame));
 	}
 
-	Array<Vector2> startEndZs;
-	Array<float> minZs;
-	Array<float> maxZs;
-	float maximumZ = -finf();
-	float minimumZ = finf();
-	for (int i = 0; i < raySpaceFrames.size() - 1; ++i) {
-		Vector2 startEndZ = Vector2(raySpaceFrames[i].translation.z, raySpaceFrames[i+1].translation.z);
-		startEndZs.append(startEndZ);
-		float minZ = min(startEndZ[0], startEndZ[1]);
-		float maxZ = max(startEndZ[0], startEndZ[1]);
-		minZs.append(minZ);
-		maxZs.append(maxZ);
-		minimumZ = min(minimumZ, minZ);
-		maximumZ = max(maximumZ, maxZ);
-	}
-	// TODO: get these quantities from single source, right now duplicating these values;
-	double delta = 0.1;
-	double metersPerSample = delta / 512.0;
-	int numSamples = max((int)(-minimumZ / metersPerSample), 0);
+    bool lastZPositive = (raySpaceFrames[1].translation.z - raySpaceFrames[0].translation.z) > 0.0f;
+    Array<float> sampleZs;
+    int sectionStartIndex = 0;
+
+    double delta = METERS_PER_SAMPLE_WINDOW;
+    double metersPerSample = delta / 512.0;
+
+    for (int i = 0; i < raySpaceFrames.size() - 1; ++i) {
+        float startZ    = raySpaceFrames[i].translation.z;
+        float endZ      = raySpaceFrames[i + 1].translation.z;
+        bool currentZPositive = (endZ - startZ) > 0.0f;
+        if (currentZPositive != lastZPositive) {
+            resampleAudio(sound, lastZPositive, sectionStartIndex, sampleZs, m_audioSamples);
+
+            sampleZs.fastClear();
+            lastZPositive = currentZPositive;
+            sectionStartIndex = i;
+        }
+        for (int j = 0; j < 512; ++j) {
+            sampleZs.append(lerp(startZ, endZ, (j + 0.5f) / (512 + 1.0f)));
+        }
+    }
+    resampleAudio(sound, lastZPositive, sectionStartIndex, sampleZs, m_audioSamples);
 
 
-	debugPrintf("MinZ, MaxZ, numSamples: %f, %f, %d\n", minimumZ, maximumZ, numSamples);
 
-	sound->buffer.resize(numSamples);
-    memset(sound->buffer.getCArray(), 0, numSamples*sizeof(Sample));
-	// Rasterize the sounds!
-
-	for (int i = 0; i < startEndZs.size(); ++i) {
-		int startIndex	= max((int)ceil(-maxZs[i] / metersPerSample), 0);
-		int endIndex	= min((int)floor(-minZs[i] / metersPerSample), numSamples);
-		float startZ	= startEndZs[i][0];
-		float endZ		= startEndZs[i][1];
-		for (int j = startIndex; j < endIndex; ++j) {
-			float sampleZ = -j*metersPerSample;
-			float alpha = (sampleZ - startZ) / (endZ - startZ);
-			if (alpha >= 0 && alpha <= 1) {
-				sound->buffer[j] = sampleAudio(i, alpha);
-			}
-		}
-	}
 
 
 	return sound;
@@ -252,10 +315,10 @@ void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
         spline.time[i] = splineLength;
         previousPosition = currentPosition;
     }
-    float lengthPerSegment = 0.1f;
+    float lengthPerSegment = METERS_PER_SAMPLE_WINDOW;
     float desiredSplineLength = lengthPerSegment*(m_transformedFrames.size()-1);
 
-    float splineMultiplier = min(0.99f, desiredSplineLength / splineLength);
+    float splineMultiplier = min(0.9999f, desiredSplineLength / splineLength);
     //lengthPerSegment *= splineMultiplier;
 
     for (int i = 1; i < m_transformedFrames.size(); ++i) {

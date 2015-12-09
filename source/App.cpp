@@ -214,9 +214,10 @@ void App::updateAudioData() {
         }
         m_cpuRawAudioSnapshot.fastClear();
         m_cpuRawAudioSnapshot.appendPOD(m_cpuRawAudioData);
-        numNewWindows = g_sampleWindowIndex - m_lastSampleWindowProcessed;
+        numNewWindows = min(g_sampleWindowIndex - m_lastSampleWindowProcessed, m_cpuRawAudioSnapshot.size() / sampleCount);
         m_lastSampleWindowProcessed = g_sampleWindowIndex;
     } m_rawAudioMutex.unlock();
+
 
 	for (int n = numNewWindows - 1; n >= 0; --n) {
 		float sumSquare = 0.0f;
@@ -334,7 +335,8 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
 	  if (pp.endWindowIndex < g_sampleWindowIndex) {
 	    m_playPlanes.remove(i);
 	  }
-	  Point3 point = pp.origin + (pp.direction * 0.1f * (g_sampleWindowIndex-pp.beginWindowIndex));
+
+	  Point3 point = pp.origin + (pp.direction * METERS_PER_SAMPLE_WINDOW * (g_sampleWindowIndex-pp.beginWindowIndex));
 
 	  Color4 solidColor(.2f, .2f, 1, .15f);
 	  //	  Plane plane(point, pp.direction);
