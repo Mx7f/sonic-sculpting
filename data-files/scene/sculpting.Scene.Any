@@ -142,43 +142,10 @@
         
 
         skybox = Skybox {
-            keyframeArray = ("cubemap/interstellar/interstellar*.png", "cubemap/nightsky/nightsky_*.jpg", "cubemap/plainsky/null_plainsky512_*.jpg");
-            timeArray = (0.0, 200.0, 400.0);
+            keyframeArray = ("cubemap/interstellar/interstellar*.png");
+            timeArray = (0.0);
         };
 
-        wallPY = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0,7,0, 0, 90, 0 ); 
-            model = "wallModel"; 
-            visible = true; 
-        };
-        wallNY = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0,-7,0, 0, 90, 0 ); 
-            model = "wallModel"; 
-            visible = true; 
-        };
-
-
-        wallPX = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(7,0,0, 90, 0, 0 ); 
-            model = "wallModel"; 
-            visible = true; 
-        };
-        wallNX = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(-7,0,0, 90, 0, 0 ); 
-            model = "wallModel"; 
-            visible = true; 
-        };
-
-        wallPZ = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0,0,7, 0, 0, 0 ); 
-            model = "wallModel"; 
-            visible = true; 
-        };
-        wallNZ = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0,0,-7, 0, 0, 0 ); 
-            model = "wallModel"; 
-            visible = true; 
-        };
 
 
         /*
@@ -224,12 +191,7 @@
     }; 
     
     models = { 
-        wallModel = ArticulatedModel::Specification { 
-            filename = "model/cube/cube.obj"; 
-            preprocess = ( 
-                transformGeometry(root(), Matrix4::scale(62, 62, 0.2 ) ); 
-                setMaterial(all(), Color3(0.9, 0.9, 0.9 ) ) ); 
-        }; 
+        
         
         
         

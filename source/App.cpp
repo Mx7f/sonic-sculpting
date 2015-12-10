@@ -449,31 +449,11 @@ void App::onUserInput(UserInput* ui) {
 		playSculpture(mouseRay);
 	}
 
-    if (ui->keyPressed(GKey('v'))) {
-        bool visible = scene()->typedEntity<VisibleEntity>("wallPX")->visible();
-        Array<String> wallNames("wallPX", "wallPY", "wallPZ", "wallNX", "wallNY", "wallNZ");
-        for (const String& name : wallNames) {
-            scene()->typedEntity<VisibleEntity>(name)->setVisible(!visible);
-        }
-    }
-
     if (ui->keyPressed(GKey('f'))) {
         m_freezeEverything = !m_freezeEverything;
         for (shared_ptr<SonicSculpturePiece>& piece : m_sonicSculpturePieces) {
             piece->setFrozen(m_freezeEverything);
         }
-    }
-
-    
-
-    // Hack to get multiple cubemaps
-    if (ui->keyPressed(GKey::PERIOD)) {
-        int i = clamp(int(floor(scene()->time() / 200.0f)) + 1, 0, 2);
-        scene()->setTime(i * 200.0);
-    }
-    if (ui->keyPressed(GKey::COMMA)) {
-        int i = clamp(int(floor(scene()->time() / 200.0f)) - 1, 0, 2);
-        scene()->setTime(i * 200.0);
     }
 
     // Hack for playing pieces
@@ -507,7 +487,6 @@ void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
 	if (m_appMode == AppMode::DEFAULT) {
 		if (notNull(m_currentSonicSculpturePiece)) {
 			if (m_currentSonicSculpturePiece->size() > 0) {
-				m_currentSonicSculpturePiece->insert(frame, 0.0f, delta);
                 m_sonicSculpturePieces.append(m_currentSonicSculpturePiece);
                 m_lastInterestingEventTime = System::time();
 			}

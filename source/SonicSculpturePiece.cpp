@@ -4,42 +4,68 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
     int sideCount = 6;
     int segmentCount = m_transformedFrames.size();
     int currentPointIndex = 0;
-    cpuVertexArray.vertex.resize(segmentCount*sideCount);
+
+    int numVertices = (segmentCount - 1)*sideCount + 1;
+
+    cpuVertexArray.vertex.resize(numVertices);
     cpuVertexArray.hasBones = true;
-    cpuVertexArray.boneIndices.resize(segmentCount*sideCount);
-    cpuVertexArray.boneWeights.resize(segmentCount*sideCount);
+    cpuVertexArray.boneIndices.resize(numVertices);
+    cpuVertexArray.boneWeights.resize(numVertices);
 
     for (int j = 0; j < segmentCount; ++j) {
         const CFrame& frame = m_transformedFrames[j];
         const float thickness = m_radii[j];
         const Point3& currentPoint = Point3(0.0, 0.0, 0.0);
 
-        for (int k = 0; k < sideCount; ++k) {
-            int index = currentPointIndex * sideCount + k;
+        if (j < segmentCount - 1) {
+            for (int k = 0; k < sideCount; ++k) {
+                int index = currentPointIndex * sideCount + k;
+                CPUVertexArray::Vertex& v = cpuVertexArray.vertex[index];
+                float theta = k * 2.0f * pif() / sideCount;
+                v.normal = Vector3(cos(theta), sin(theta), 0.0f);
+                v.position = currentPoint + v.normal * thickness;
+                v.texCoord0 = Point2(float(j) / float(segmentCount - 1), float(k) / (sideCount - 1));
+                v.tangent = Vector4(Vector3::unitZ(), 1.0f);
+
+                cpuVertexArray.boneIndices[index] = Vector4int32(j, j, j, j);
+                cpuVertexArray.boneWeights[index] = Vector4(1.0f, 0.0f, 0.0f, 0.0f);
+
+            }
+
+            if (j > 0) {
+                int currStart = currentPointIndex * sideCount;
+                int prevStart = currStart - sideCount;
+                for (int k = 0; k < sideCount; ++k) {
+                    const int next = (k + 1) % sideCount;
+                    cpuIndexArray.append(prevStart + k, prevStart + next, currStart + k);
+                    cpuIndexArray.append(prevStart + next, currStart + next, currStart + k);
+                }
+            }
+        } else { // cap
+            int index = currentPointIndex * sideCount;
             CPUVertexArray::Vertex& v = cpuVertexArray.vertex[index];
-            float theta = k * 2.0f * pif() / sideCount;
-            v.normal = Vector3(cos(theta), sin(theta), 0.0f);
-            v.position = currentPoint + v.normal * thickness;
-            v.texCoord0 = Point2(float(j) / float(segmentCount-1), float(k) / (sideCount-1));
-            v.tangent = Vector4(Vector3::unitZ(), 1.0f);
+            v.normal = Vector3::unitZ();
+            v.position = currentPoint;
+            v.texCoord0 = Point2(float(j) / float(segmentCount - 1), 0.5);
+            v.tangent = Vector4(Vector3::unitX(), 1.0f);
 
             cpuVertexArray.boneIndices[index] = Vector4int32(j, j, j, j);
             cpuVertexArray.boneWeights[index] = Vector4(1.0f, 0.0f, 0.0f, 0.0f);
 
-        }
-
-        if (j > 0) {
-            int currStart = currentPointIndex * sideCount;
-            int prevStart = currStart - sideCount;
+            int cap = currentPointIndex * sideCount;
+            int prevStart = cap - sideCount;
             for (int k = 0; k < sideCount; ++k) {
                 const int next = (k + 1) % sideCount;
-                cpuIndexArray.append(prevStart + k, prevStart + next, currStart + k);
-                cpuIndexArray.append(prevStart + next, currStart + next, currStart + k);
+                cpuIndexArray.append(prevStart + k, prevStart + next, cap);
             }
+
         }
 
         ++currentPointIndex;
     }
+
+
+
 }
 
 
