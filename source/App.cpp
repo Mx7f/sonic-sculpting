@@ -389,23 +389,23 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
             m_currentSonicSculpturePiece->render(rd, scene()->lightingEnvironment());
         }
         for (int i = m_playPlanes.size() - 1; i >= 0; --i) {
-	  const PlayPlane& pp = m_playPlanes[i];
-	  if (pp.endWindowIndex < g_sampleWindowIndex) {
-	    m_playPlanes.remove(i);
-	  }
+	        const PlayPlane& pp = m_playPlanes[i];
+	        if (pp.endWindowIndex < g_sampleWindowIndex) {
+	            m_playPlanes.remove(i);
+	        }
 
-	  Point3 point = pp.origin + (pp.direction * METERS_PER_SAMPLE_WINDOW * (g_sampleWindowIndex-pp.beginWindowIndex));
+	        Point3 point = pp.origin + (pp.direction * METERS_PER_SAMPLE_WINDOW * (g_sampleWindowIndex-pp.beginWindowIndex));
 
-	  Color4 solidColor(.2f, .2f, 1, .15f);
-	  //	  Plane plane(point, pp.direction);
-	  //	  Draw::plane(plane, rd, solidColor, Color4::clear());
+	        Color4 solidColor(1.0f, .02f, .03f, .15f);
+	        //	  Plane plane(point, pp.direction);
+	        //	  Draw::plane(plane, rd, solidColor, Color4::clear());
 
-	  CFrame planeFrame = pp.frame;
-	  planeFrame.translation = point;
+	        CFrame planeFrame = pp.frame;
+	        planeFrame.translation = point;
 	  
-	  Box b(Vector3(-100.0f, -100.0f, 0.0f), Vector3(100.0f, 100.0f, 0.1f), planeFrame);
-	  Draw::box(b, rd, solidColor, Color4::clear());
-	}
+	        Box b(Vector3(-100.0f, -100.0f, 0.0f), Vector3(100.0f, 100.0f, 0.1f), planeFrame);
+	        Draw::box(b, rd, solidColor, Color4::clear());
+        }
 
 
         drawDebugShapes();
@@ -512,8 +512,18 @@ void App::onUserInput(UserInput* ui) {
     }
 
 	if (ui->keyPressed(GKey::RETURN)) {
-		const Ray& mouseRay = scene()->eyeRay(activeCamera(), userInput->mouseXY() + Vector2(0.5f, 0.5f), RenderDevice::current->viewport(), Vector2int16(0, 0));
-		playSculpture(mouseRay);
+
+
+        Point3 origin = Point3(0.0, 0.0, 0.0);
+        Vector3 direction = activeCamera()->frame().rightVector();
+        Ray playRay(origin, direction);
+        float minValue = finf();
+        for (auto& sculpture : m_sonicSculpturePieces) {
+            minValue = min(minValue, sculpture->minValueAlongRay(playRay));
+        }
+
+        playRay.set(origin + direction*minValue, direction);
+		playSculpture(playRay);
 	}
 
     if (ui->keyPressed(GKey('f'))) {

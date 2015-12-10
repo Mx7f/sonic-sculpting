@@ -47,6 +47,8 @@ public:
 
 	shared_ptr<AudioSample> getAudioSampleFromRay(const Ray& ray);
 
+    float minValueAlongRay(const Ray& ray) const;
+
     static shared_ptr<SonicSculpturePiece> create(shared_ptr<UniversalMaterial> material);
 
     void insert(const CFrame& frame, const float radius, const float delta, const Array<float>& samples = Array<float>());

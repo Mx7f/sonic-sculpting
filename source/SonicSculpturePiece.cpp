@@ -287,6 +287,25 @@ shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ra
 	return sound;
 }
 
+float SonicSculpturePiece::minValueAlongRay(const Ray& ray) const {
+    Vector3 zAxis = -ray.direction();
+    Vector3 xAxis;
+    if (abs(zAxis.dot(Vector3::unitY())) < 0.9f) {
+        xAxis = zAxis.unitCross(Vector3::unitY());
+    } else {
+        xAxis = zAxis.unitCross(Vector3::unitX());
+    }
+    Vector3 yAxis = zAxis.cross(xAxis);
+
+    CFrame rayFrame = CFrame(Matrix3::fromColumns(xAxis, yAxis, zAxis), ray.origin());
+    float minValue = finf();
+    for (auto& frame : m_transformedFrames) {
+        minValue = min(minValue, rayFrame.toObjectSpace(frame).translation.z);
+    }
+
+    return minValue;
+}
+
 shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<UniversalMaterial> material) {
     shared_ptr<SonicSculpturePiece> s(new SonicSculpturePiece());
     s->m_material = material;
