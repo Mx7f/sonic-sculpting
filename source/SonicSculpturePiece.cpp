@@ -197,7 +197,7 @@ static void resampleAudio(shared_ptr<AudioSample> sound, bool zPositive, int sec
         for (int j = bufferIndexStart; j <= bufferIndexEnd; ++j) {
             float gatherZ = indexToSampleZ(j);
             // TODO: increase perf
-            int indexInSampleZs = getIndexOfClosestSampleRoundedUp(gatherZ, sampleZs, 0);
+            int indexInSampleZs = getIndexOfClosestSampleRoundedUp(gatherZ, sampleZs, previousI);
             previousI = indexInSampleZs;
             int indexInSculpture = indexInSampleZs + sectionStartIndex * 512;
             // TODO: Bilinear interpolation
@@ -418,7 +418,7 @@ void SonicSculpturePiece::setShaderArgs(Args & args) {
     args.setAttributeArray("g3d_BoneWeights", m_boneWeights);
     args.setAttributeArray("g3d_BoneIndices", m_boneIndices);
     args.setIndexStream(m_indices);
-    args.setMacro("NUM_BONES", m_transformedFrames.size());
+    args.setMacro("HAS_BONES", 1);
     args.setMacro("NUM_LIGHTMAP_DIRECTIONS", 0);
     args.setMacro("HAS_VERTEX_COLOR", 0);
     args.setMacro("HAS_ALPHA", m_material->hasAlpha());
