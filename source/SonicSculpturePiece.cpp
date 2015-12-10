@@ -130,16 +130,19 @@ static float indexToSampleZ(int i) {
     return -i * metersPerSample;
 }
 
-int getIndexOfClosestSampleRoundedDown(float gatherZ, const Array<float>& sampleZs, bool backwards) {
-    if (backwards) {
-        int index = 0;
-        // TODO: Check for infinite looping
-        while (sampleZs[index] > gatherZ && index < sampleZs.size()-1) {
-            ++index;
-        }
-        return index;
+/** Assumes samples are becoming more negative */
+int getIndexOfClosestSampleRoundedUp(float gatherZ, const Array<float>& sampleZs, int previousI) {
+    int index = previousI;
+    // TODO: Check for infinite looping
+    while (sampleZs[index] > gatherZ && index < sampleZs.size()-1) {
+        ++index;
     }
-    int index = sampleZs.size() - 1;
+    return index;
+} 
+
+
+int getIndexOfClosestSampleRoundedDown(float gatherZ, const Array<float>& sampleZs, int previousI) {
+    int index = previousI;
     // TODO: Check for infinite looping
     while (sampleZs[index] > gatherZ && index > 0) {
         --index;
@@ -166,16 +169,18 @@ static void resampleAudio(shared_ptr<AudioSample> sound, bool zPositive, int sec
             }
         }
 
+        int previousI = sampleZs.size() - 1;
         for (int j = bufferIndexStart; j <= bufferIndexEnd; ++j) {
             float gatherZ = indexToSampleZ(j);
             // TODO: increase perf
-            int indexInSampleZs = getIndexOfClosestSampleRoundedDown(gatherZ, sampleZs, false);
+            int indexInSampleZs = getIndexOfClosestSampleRoundedDown(gatherZ, sampleZs, previousI);
+            previousI = indexInSampleZs;
             int indexInSculpture = indexInSampleZs + sectionStartIndex * 512;
             // TODO: Bilinear interpolation
             sound->buffer[j] = audioBuffer[indexInSculpture];
         }
 
-    } else {
+    } else { // TODO: combine these two branches in a better manner
         float minZ = sampleZs[sampleZs.size() - 1];
         float maxZ = sampleZs[0];
         int bufferIndexStart = max(0, (int)(-maxZ / metersPerSample));
@@ -188,11 +193,12 @@ static void resampleAudio(shared_ptr<AudioSample> sound, bool zPositive, int sec
                 sound->buffer[j] = 0.0f;
             }
         }
-
+        int previousI = 0;
         for (int j = bufferIndexStart; j <= bufferIndexEnd; ++j) {
             float gatherZ = indexToSampleZ(j);
             // TODO: increase perf
-            int indexInSampleZs = getIndexOfClosestSampleRoundedDown(gatherZ, sampleZs, true);
+            int indexInSampleZs = getIndexOfClosestSampleRoundedUp(gatherZ, sampleZs, 0);
+            previousI = indexInSampleZs;
             int indexInSculpture = indexInSampleZs + sectionStartIndex * 512;
             // TODO: Bilinear interpolation
             sound->buffer[j] = audioBuffer[indexInSculpture];
