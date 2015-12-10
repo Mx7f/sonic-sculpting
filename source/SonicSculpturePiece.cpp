@@ -14,6 +14,8 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
     cpuVertexArray.boneIndices.resize(numVertices);
     cpuVertexArray.boneWeights.resize(numVertices);
 
+    // All of the geometry is generated in a canonical unwarped space. All of the transformation is
+    // handles by "bones", as in traditional mesh skinning
     for (int j = 0; j < segmentCount; ++j) {
         const CFrame& frame = m_transformedFrames[j];
         const float thickness = m_radii[j];
@@ -36,6 +38,7 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
                 v.texCoord0 = Point2(float(j) / float(segmentCount - 1), float(k) / (sideCount - 1));
                 v.tangent = Vector4(Vector3::unitZ(), 1.0f);
 
+                // We do all of the transforms via bones
                 cpuVertexArray.boneIndices[index] = Vector4int32(j, j, j, j);
                 cpuVertexArray.boneWeights[index] = Vector4(1.0f, 0.0f, 0.0f, 0.0f);
 
@@ -82,7 +85,7 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
 static void uploadBones
 (const shared_ptr<Texture>& boneTexture,
     const Array<CFrame>&    boneMatrices) {
-
+    // Taken wholesale from G3D
     if (notNull(boneTexture)) {
         // Copy Bones to GPU
         const shared_ptr<CPUPixelTransferBuffer>& pixelBuffer =
@@ -91,7 +94,7 @@ static void uploadBones
                 boneTexture->format());
         Vector4* row0 = (Vector4*)pixelBuffer->row(0);
         Vector4* row1 = (Vector4*)pixelBuffer->row(1);
-
+        
         for (int i = 0; i < boneMatrices.size(); ++i) {
             const CFrame& boneFrame = boneMatrices[i];
             /* Unoptimized but readable version:
@@ -144,13 +147,6 @@ void SonicSculpturePiece::uploadToGPU() {
     m_gpuUpdated = true;
 }
 
-Sample SonicSculpturePiece::sampleAudio(int windowIndex, float alpha) {
-	// TODO: get window size from somewhere
-	int windowSize = 512;
-	// TODO: Do something better than nearest neighbors sampling...
-	return m_audioSamples[windowIndex*windowSize + (int)(alpha*(windowSize-1))];
-}
-
 
 shared_ptr<AudioSample> SonicSculpturePiece::getBaseAudioSample() const {
     // TODO: get sample rate from somewhere
@@ -166,7 +162,7 @@ static float indexToSampleZ(int i) {
 }
 
 /** Assumes samples are becoming more negative */
-int getIndexOfClosestSampleRoundedUp(float gatherZ, const Array<float>& sampleZs, int previousI) {
+static int getIndexOfClosestSampleRoundedUp(float gatherZ, const Array<float>& sampleZs, int previousI) {
     int index = previousI;
     // TODO: Check for infinite looping
     while (sampleZs[index] > gatherZ && index < sampleZs.size()-1) {
@@ -176,7 +172,7 @@ int getIndexOfClosestSampleRoundedUp(float gatherZ, const Array<float>& sampleZs
 } 
 
 
-int getIndexOfClosestSampleRoundedDown(float gatherZ, const Array<float>& sampleZs, int previousI) {
+static int getIndexOfClosestSampleRoundedDown(float gatherZ, const Array<float>& sampleZs, int previousI) {
     int index = previousI;
     // TODO: Check for infinite looping
     while (sampleZs[index] > gatherZ && index > 0) {
@@ -287,10 +283,6 @@ shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ra
         }
     }
     resampleAudio(sound, lastZPositive, sectionStartIndex, sampleZs, m_audioSamples);
-
-
-
-
 
 	return sound;
 }

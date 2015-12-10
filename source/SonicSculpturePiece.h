@@ -31,8 +31,6 @@ protected:
 
     bool m_frozen;
 
-	Sample sampleAudio(int windowIndex, float alpha);
-
     void uploadToGPU();
     void getCPUGeometry(CPUVertexArray& cpuVertexArray, Array<int>& cpuIndexArray) const;
     SonicSculpturePiece() : m_gpuUpdated(false) {}

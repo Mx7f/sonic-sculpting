@@ -12,6 +12,18 @@ void Synthesizer::queueSound(shared_ptr<AudioSample> audioSample, int delay) {
     } mutex.unlock();
 }
 
+void Synthesizer::flushHackQueue() {
+    for (int i = m_totalHack.size() - 1; i >= 0; --i) {
+        if (m_totalHack[i].unique()) {
+            m_totalHack.remove(i);
+        }
+    }
+    for (int i = m_totalHack2.size() - 1; i >= 0; --i) {
+        if (m_totalHack2[i].unique()) {
+            m_totalHack2.remove(i);
+        }
+    }
+}
 
 void Synthesizer::getSoundInstances(Array<SoundInstance>& soundInstances) {
     mutex.lock(); {
