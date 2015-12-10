@@ -155,6 +155,7 @@ void App::initializeAudio() {
 void App::onInit() {
     GApp::onInit();
     s_app = this;
+    cameraAdjustment = 0.7f;
 
     m_sonicSculptureFilename = "default.Soundscape.Any";
 
@@ -402,9 +403,14 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& allSurface
 
 	        CFrame planeFrame = pp.frame;
 	        planeFrame.translation = point;
-	  
-	        Box b(Vector3(-100.0f, -100.0f, 0.0f), Vector3(100.0f, 100.0f, 0.1f), planeFrame);
-	        Draw::box(b, rd, solidColor, Color4::clear());
+            Vector3 minP(finf(), finf(), finf());
+            Vector3 maxP(-finf(), -finf(), -finf());
+            for (auto& piece : m_sonicSculpturePieces) {
+                piece->minMaxValue(planeFrame, minP, maxP);
+            }
+            Box b(Vector3(minP.xy()-Vector2(3,3), 0.0f), Vector3(maxP.xy() + Vector2(3, 3), 0.1f), planeFrame);
+
+            Draw::box(b, rd, solidColor, Color4::clear());
         }
 
 
@@ -516,12 +522,12 @@ void App::onUserInput(UserInput* ui) {
 
         Point3 origin = Point3(0.0, 0.0, 0.0);
         Vector3 direction = activeCamera()->frame().rightVector();
-        Ray playRay(origin, direction);
+        Ray playRay(origin, -direction);
         float minValue = finf();
         for (auto& sculpture : m_sonicSculpturePieces) {
             minValue = min(minValue, sculpture->minValueAlongRay(playRay));
         }
-
+        
         playRay.set(origin + direction*minValue, direction);
 		playSculpture(playRay);
 	}
@@ -531,6 +537,14 @@ void App::onUserInput(UserInput* ui) {
         for (shared_ptr<SonicSculpturePiece>& piece : m_sonicSculpturePieces) {
             piece->setFrozen(m_freezeEverything);
         }
+    }
+
+    if (ui->keyDown(GKey(','))) {
+        cameraAdjustment -= 0.01f;
+    }
+
+    if (ui->keyDown(GKey('.'))) {
+        cameraAdjustment += 0.01f;
     }
 
     // Hack for playing pieces
@@ -597,6 +611,10 @@ void App::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
     }
     // See 
     Synthesizer::global->flushHackQueue();
+
+    CFrame cameraFrame = activeCamera()->frame();
+    cameraFrame.translation *= cameraAdjustment;
+    activeCamera()->setFrame(cameraFrame);
 
     // Example GUI dynamic layout code.  Resize the debugWindow to fill
     // the screen horizontally.

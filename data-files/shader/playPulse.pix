@@ -6,7 +6,7 @@ out vec4 result;
 
 void main() {
     float dist = abs(gl_FragCoord.x - pulsePos);
-    float t = smoothstep(1.0, 1.2, dist);
+    float t = smoothstep(1.0, 3.0, dist);
 
     result = vec4(mix(vec3(1.0, 0.0, 0.0), vec3(0.0,0.0,0.0), t), 1.0);
 }

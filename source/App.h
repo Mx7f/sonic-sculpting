@@ -32,7 +32,8 @@ protected:
 
     String m_sonicSculptureFilename;
 
-    
+    float cameraAdjustment;
+
     RealTime m_lastInterestingEventTime;
 
     RtAudio m_rtAudio;

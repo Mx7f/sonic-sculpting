@@ -21,3 +21,5 @@ To compile this project use the provided visual studio 2015 files on windows, or
 - Freeze/unfreeze movement with 'f'.
 - Ctrl-S to save your soundscape
 - Ctrl-L to load it back in
+- Press F2 to toggle between free-flight and "on-rails" camera modes.
+- , and . make the camera zoon in and out towards the center in "on-rails" camera mode.

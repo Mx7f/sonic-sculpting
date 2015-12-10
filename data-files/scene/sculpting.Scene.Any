@@ -96,29 +96,25 @@
             
             track = PFrameSpline { 
                     control = ( 
-                    CFrame::fromXYZYPRDegrees(0,0,6.1,0,0,0), 
-                    CFrame::fromXYZYPRDegrees(0.44284, 0.0068688, 6.1055, -13.751, 1.7189, 0), 
-                    CFrame::fromXYZYPRDegrees(-1.4076, -0.030504, 6.1466, -55.577, 2.8648, 0),
-                    CFrame::fromXYZYPRDegrees(-1.7076, -0.32906, 3.7657, -147.82, -2.8648, 0),
-                    CFrame::fromXYZYPRDegrees(-2.3167, -2.6942, 1.8137, 161.18, 14.324, 0),
-                    CFrame::fromXYZYPRDegrees(-3.5333, 4.7143, -4.2971, -167.88, -25.783, 0),
-                    CFrame::fromXYZYPRDegrees(4.3539, 3.0605, -4.214, 57.478, -14.324, 0),
-                    CFrame::fromXYZYPRDegrees(4.8812, 2.6797, 2.1731, 16.798, -29.221, 0),
-                    CFrame::fromXYZYPRDegrees(0.55844, 2.6264, -1.6006, -109.25, 0.57298, 0)
+                    CFrame::fromXYZYPRDegrees(-6.6677, 1.906, 8.554, -69.305, -12.024, 0), 
+                    CFrame::fromXYZYPRDegrees(0.36847, -1.3174, 12.75, 19.5115, 3.4456, 0), 
+                    CFrame::fromXYZYPRDegrees(5.1674, 7.4116, 7.8642, 39.816, -33.224, 0),
+                    CFrame::fromXYZYPRDegrees(10.857, 3.7004, -5.9078, 138.26, -16.608, 0),
+                    CFrame::fromXYZYPRDegrees(-2.2946, -6.2384, -11.313, -150.95, 28.656, 0),
+                    CFrame::fromXYZYPRDegrees(-14.374, -3.2005, -0.25099, -94.438, 13.759, 0)
+                    
                     ); 
                     extrapolationMode = "CYCLIC"; 
                     finalInterval = -1; 
                     interpolationMode = "CUBIC"; 
                     time = ( 
                     0, 
-                    1.0,
-                    2,
-                    3,
-                    4,
-                    5,
-                    6,
-                    7,
-                    8
+                    13.0,
+                    16,
+                    19,
+                    32,
+                    35
+                  
                     ); 
                 }; 
             motionBlurSettings = MotionBlurSettings { 

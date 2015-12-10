@@ -249,7 +249,7 @@ shared_ptr<AudioSample> SonicSculpturePiece::getAudioSampleFromRay(const Ray& ra
 	Vector3 yAxis = zAxis.cross(xAxis);
 
 	CFrame rayFrame = CFrame(Matrix3::fromColumns(xAxis, yAxis, zAxis), ray.origin());
-	debugPrintf("%s\n", rayFrame.toXYZYPRDegreesString().c_str());
+	//debugPrintf("%s\n", rayFrame.toXYZYPRDegreesString().c_str());
 
 	// TODO: get sample rate from somewhere
 	shared_ptr<AudioSample> sound = AudioSample::createEmpty(440000);
@@ -304,6 +304,13 @@ float SonicSculpturePiece::minValueAlongRay(const Ray& ray) const {
     }
 
     return minValue;
+}
+
+void SonicSculpturePiece::minMaxValue(const CFrame & frame, Point3& minP, Point3& maxP) const {
+    for (auto& f : m_transformedFrames) {
+        minP = min(minP, frame.toObjectSpace(f).translation);
+        maxP = max(maxP, frame.toObjectSpace(f).translation);
+    }
 }
 
 shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<UniversalMaterial> material) {

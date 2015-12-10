@@ -49,6 +49,8 @@ public:
 
     float minValueAlongRay(const Ray& ray) const;
 
+    void minMaxValue(const CFrame& frame, Point3& minP, Point3& maxP) const;
+
     static shared_ptr<SonicSculpturePiece> create(shared_ptr<UniversalMaterial> material);
 
     void insert(const CFrame& frame, const float radius, const float delta, const Array<float>& samples = Array<float>());
