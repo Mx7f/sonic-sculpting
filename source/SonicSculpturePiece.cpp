@@ -5,6 +5,8 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
     int segmentCount = m_transformedFrames.size();
     int currentPointIndex = 0;
 
+    // We "cap" the end with a single vertex. 
+    // For now we "cap" the beginning with a ring of radius 0 with the normals pointed forwards...
     int numVertices = (segmentCount - 1)*sideCount + 1;
 
     cpuVertexArray.vertex.resize(numVertices);
@@ -24,6 +26,13 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
                 float theta = k * 2.0f * pif() / sideCount;
                 v.normal = Vector3(cos(theta), sin(theta), 0.0f);
                 v.position = currentPoint + v.normal * thickness;
+
+                // "Cap" the beginning
+                if (j == 0) {
+                    v.normal = -Vector3::unitZ();
+                    v.position = currentPoint;
+                }
+
                 v.texCoord0 = Point2(float(j) / float(segmentCount - 1), float(k) / (sideCount - 1));
                 v.tangent = Vector4(Vector3::unitZ(), 1.0f);
 
