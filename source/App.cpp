@@ -34,6 +34,34 @@ int main(int argc, const char* argv[]) {
     return App(settings).run();
 }
 
+// Helper function
+static shared_ptr<UniversalMaterial> getSonicSculptureMaterial(int index) {
+    shared_ptr<Texture> lambertianTex = Texture::createEmpty(format("Sonic Sculpture %d", index), 512, 1, ImageFormat::RGBA16F());
+    static shared_ptr<Framebuffer> fb = Framebuffer::create("Sonic Sculpture Lambertian FB Clearer");
+    fb->set(Framebuffer::COLOR0, lambertianTex);
+    RenderDevice* rd = RenderDevice::current;
+    rd->push2D(fb); {
+        rd->setColorClearValue(Color3::white() * 0.9f);
+        rd->clear();
+    } rd->pop2D();
+    lambertianTex->generateMipMaps();
+    UniversalMaterial::Specification spec;
+    spec.setLambertian(lambertianTex);
+    static uint32 dummyBytes[512];
+    for (int i = 0; i < 512; ++i) {
+        dummyBytes[i] = 4294967295;
+    }
+    shared_ptr<Texture> emissiveTex = Texture::fromMemory(format("Sonic Sculpture %d Emissive", index), dummyBytes, ImageFormat::RGBA8(), 512, 1, 1, 1, ImageFormat::RGBA16F());
+    fb->set(Framebuffer::COLOR0, emissiveTex);
+    rd->push2D(fb); {
+        rd->setColorClearValue(Color3::black());
+        rd->clear();
+    } rd->pop2D();
+    emissiveTex->generateMipMaps();
+    spec.setEmissive(emissiveTex);
+    //spec.setBump(System::findDataFile("material/10538-bump.jpg"));
+    return UniversalMaterial::create(spec);
+}
 
 App::App(const GApp::Settings& settings) : GApp(settings) {
     renderDevice->setColorClearValue(Color3::white());
@@ -127,6 +155,8 @@ void App::initializeAudio() {
 void App::onInit() {
     GApp::onInit();
     s_app = this;
+
+    m_sonicSculptureFilename = "default.Soundscape.Any";
 
     m_freezeEverything = false;
 
@@ -278,6 +308,34 @@ void App::generatePlayPulse(shared_ptr<SonicSculpturePiece> piece) {
     pp.piece = piece;
     m_currentPlayPulses.append(pp);
     Synthesizer::global->queueSound(piece->getBaseAudioSample());
+}
+
+void App::saveSoundscape() const {
+    Any a(Any::TABLE, "SoundScape");
+
+    Array<Any> sonicSculptureArray;
+    for (int i = 0; i < m_sonicSculpturePieces.size(); ++i) {
+        sonicSculptureArray.append(m_sonicSculpturePieces[i]->toAny(format("sonicSculpture%d.bin", i)));
+    }
+
+    a["sonicSculptures"] = sonicSculptureArray;
+    
+    a.save(m_sonicSculptureFilename);
+}
+
+void App::loadSoundscape() {
+    Any a;
+    a.load(System::findDataFile(m_sonicSculptureFilename));
+    AnyTableReader r("SoundScape", a);
+    Array<Any> sonicSculptureArray;
+    r.getIfPresent("sonicSculptures", sonicSculptureArray);
+    r.verifyDone();
+    m_sonicSculpturePieces.fastClear();
+    for (int i = 0; i < sonicSculptureArray.size(); ++i) {
+        shared_ptr<UniversalMaterial> material = getSonicSculptureMaterial(m_sonicSculpturePieces.size());
+        m_sonicSculpturePieces.append(SonicSculpturePiece::create(material, sonicSculptureArray[i]));
+    }
+    
 }
 
 
@@ -444,6 +502,15 @@ void App::onUserInput(UserInput* ui) {
         m_appMode = AppMode::DEFAULT;
     }
 
+    if (ui->keyDown(GKey::LCTRL) || ui->keyDown(GKey::RCTRL)) {
+        if (ui->keyPressed(GKey('s'))) {
+            saveSoundscape();
+        }
+        if (ui->keyPressed(GKey('l'))) {
+            loadSoundscape();
+        }
+    }
+
 	if (ui->keyPressed(GKey::RETURN)) {
 		const Ray& mouseRay = scene()->eyeRay(activeCamera(), userInput->mouseXY() + Vector2(0.5f, 0.5f), RenderDevice::current->viewport(), Vector2int16(0, 0));
 		playSculpture(mouseRay);
@@ -476,6 +543,7 @@ void App::onGraphics2D(RenderDevice* rd, Array<Surface2D::Ref>& posed2D) {
     Surface2D::sortAndRender(rd, posed2D);
 }
 
+
 void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
 	float delta = 0.1f;
 	float radius = sqrt(m_smoothedRootMeanSquare) * 1.0f;
@@ -494,31 +562,7 @@ void App::updateSonicSculpture(int audioSampleOffset, int audioSampleCount) {
 		}
 	} else if (m_appMode == AppMode::MAKING_SCULPTURE) {
 		if (isNull(m_currentSonicSculpturePiece)) {
-            shared_ptr<Texture> lambertianTex = Texture::createEmpty(format("Sonic Sculpture %d", m_sonicSculpturePieces.size()), 512, 1, ImageFormat::RGBA16F());
-            static shared_ptr<Framebuffer> fb = Framebuffer::create("Sonic Sculpture Lambertian FB Clearer");
-            fb->set(Framebuffer::COLOR0, lambertianTex);
-            RenderDevice* rd = RenderDevice::current;
-            rd->push2D(fb); {
-                rd->setColorClearValue(Color3::white() * 0.9f);
-                rd->clear();
-            } rd->pop2D();
-            lambertianTex->generateMipMaps();
-            UniversalMaterial::Specification spec;
-            spec.setLambertian(lambertianTex);
-            static uint32 dummyBytes[512];
-            for (int i = 0; i < 512; ++i) {
-                dummyBytes[i] = 4294967295;
-            }
-            shared_ptr<Texture> emissiveTex = Texture::fromMemory(format("Sonic Sculpture %d Emissive", m_sonicSculpturePieces.size()), dummyBytes, ImageFormat::RGBA8(), 512, 1, 1,1, ImageFormat::RGBA16F());
-            fb->set(Framebuffer::COLOR0, emissiveTex);
-            rd->push2D(fb); {
-                rd->setColorClearValue(Color3::black());
-                rd->clear();
-            } rd->pop2D();
-            emissiveTex->generateMipMaps();
-            spec.setEmissive(emissiveTex);
-            //spec.setBump(System::findDataFile("material/10538-bump.jpg"));
-            shared_ptr<UniversalMaterial> material = UniversalMaterial::create(spec);
+            shared_ptr<UniversalMaterial> material = getSonicSculptureMaterial(m_sonicSculpturePieces.size());
 			m_currentSonicSculpturePiece = SonicSculpturePiece::create(material);
 		}
         m_lastInterestingEventTime = System::time();

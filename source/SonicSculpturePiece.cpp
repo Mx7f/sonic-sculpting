@@ -76,8 +76,6 @@ void SonicSculpturePiece::getCPUGeometry(CPUVertexArray & cpuVertexArray, Array<
         ++currentPointIndex;
     }
 
-
-
 }
 
 
@@ -208,7 +206,8 @@ static void resampleAudio(shared_ptr<AudioSample> sound, bool zPositive, int sec
             previousI = indexInSampleZs;
             int indexInSculpture = indexInSampleZs + sectionStartIndex * 512;
             // TODO: Bilinear interpolation
-            sound->buffer[j] = audioBuffer[indexInSculpture];
+            // Addition allows adding together both "forward" and "backward" versions of the sound
+            sound->buffer[j] += audioBuffer[indexInSculpture];
         }
 
     } else { // TODO: combine these two branches in a better manner
@@ -232,6 +231,7 @@ static void resampleAudio(shared_ptr<AudioSample> sound, bool zPositive, int sec
             previousI = indexInSampleZs;
             int indexInSculpture = indexInSampleZs + sectionStartIndex * 512;
             // TODO: Bilinear interpolation
+            // Addition allows adding together both "forward" and "backward" versions of the sound
             sound->buffer[j] = audioBuffer[indexInSculpture];
         }
 
@@ -386,22 +386,46 @@ void SonicSculpturePiece::onSimulation(RealTime rdt, SimTime sdt, SimTime idt) {
 
 }
 
-void SonicSculpturePiece::serialize(BinaryOutput& output) const {
-    m_frame.serialize(output);
-    G3D::serialize(m_audioSamples, output);
-    G3D::serialize(m_deltas, output);
-    //G3D::serialize(m_originalFrames, output);
-    G3D::serialize(m_radii, output);
+Any SonicSculpturePiece::toAny(const String& binaryFilename) const {
+    Any any(Any::TABLE, "SonicSculpturePiece");
+    any["frame"] = m_frame;
+
+    any["binaryFilename"] = binaryFilename;
+
+    any["originalFrames"] = m_originalFrames;
+    any["transformedFrames"] = m_transformedFrames;
+    any["generalDirection"] = m_generalDirection;
+    any["frozen"] = m_frozen;
+
+    BinaryOutput bo(binaryFilename, G3D_LITTLE_ENDIAN);
+    G3D::serialize<float>(m_audioSamples,bo);
+    G3D::serialize<float>(m_deltas, bo);
+    G3D::serialize<float>(m_radii, bo);
+    bo.commit();
+
+
+    return any;
 }
 
-shared_ptr<SonicSculpturePiece> SonicSculpturePiece::fromBinaryInput(shared_ptr<UniversalMaterial> material, BinaryInput& input) {
+shared_ptr<SonicSculpturePiece> SonicSculpturePiece::create(shared_ptr<UniversalMaterial> material, const Any& any) {
     shared_ptr<SonicSculpturePiece> s;
-    s->m_frame.deserialize(input);
-    deserialize<float>(s->m_audioSamples, input);
-    deserialize<float>(s->m_deltas, input);
-    //deserialize<CFrame>(s->m_originalFrames, input);
-    deserialize<float>(s->m_radii, input);
-    s->m_material = material;
+    s = SonicSculpturePiece::create(material);
+    AnyTableReader r("SonicSculpturePiece", any);
+
+    r.getIfPresent("frame",             s->m_frame);
+    String binaryFilename;
+    r.getIfPresent("binaryFilename", binaryFilename);
+    BinaryInput bi(System::findDataFile(binaryFilename), G3D_LITTLE_ENDIAN);
+    G3D::deserialize<float>(s->m_audioSamples, bi);
+    G3D::deserialize<float>(s->m_deltas, bi);
+    G3D::deserialize<float>(s->m_radii, bi);
+
+    r.getIfPresent("originalFrames",    s->m_originalFrames);
+    r.getIfPresent("transformedFrames", s->m_transformedFrames);
+    r.getIfPresent("generalDirection",  s->m_generalDirection);
+    r.getIfPresent("frozen",            s->m_frozen);
+    r.verifyDone();
+
     s->uploadToGPU();
     return s; 
 }

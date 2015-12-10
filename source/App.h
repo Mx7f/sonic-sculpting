@@ -30,6 +30,8 @@ protected:
 
     bool m_freezeEverything;
 
+    String m_sonicSculptureFilename;
+
     
     RealTime m_lastInterestingEventTime;
 
@@ -103,6 +105,9 @@ protected:
 
     void generatePlayPulse(shared_ptr<SonicSculpturePiece> piece);
 
+    void saveSoundscape() const;
+
+    void loadSoundscape();
 
 	void playSculpture(const Ray& playRay);
 

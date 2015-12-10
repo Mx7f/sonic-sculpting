@@ -10,11 +10,11 @@ protected:
     Array<CFrame>   m_originalFrames;
 
     Array<CFrame>   m_transformedFrames;
-    Array<CFrame>   m_previousTransformedFrames;
 
     Array<float>    m_radii;
 
     Vector3         m_generalDirection;
+    bool            m_frozen;
 
     bool            m_gpuUpdated;
 
@@ -29,8 +29,6 @@ protected:
 
     shared_ptr<UniversalMaterial> m_material;
 
-    bool m_frozen;
-
     void uploadToGPU();
     void getCPUGeometry(CPUVertexArray& cpuVertexArray, Array<int>& cpuIndexArray) const;
     SonicSculpturePiece() : m_gpuUpdated(false) {}
@@ -41,7 +39,9 @@ public:
 
     void onSimulation(RealTime rdt, SimTime sdt, SimTime idt);
 
-    void serialize(BinaryOutput& output) const;
+    Any toAny(const String& binaryFilename) const;
+
+    static shared_ptr<SonicSculpturePiece> create(shared_ptr<UniversalMaterial> material, const Any& any);
 
     shared_ptr<AudioSample> getBaseAudioSample() const;
 
@@ -55,7 +55,7 @@ public:
 
     void setShaderArgs(Args& args);
 
-    static shared_ptr<SonicSculpturePiece> fromBinaryInput(shared_ptr<UniversalMaterial> material, BinaryInput& input);
+
 
     int size() const {
         return m_originalFrames.size();
